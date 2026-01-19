@@ -2,95 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Dark arcade theme */
+    --background: 230 25% 8%;
+    --foreground: 45 100% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 230 20% 12%;
+    --card-foreground: 45 100% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 230 20% 12%;
+    --popover-foreground: 45 100% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Fire gradient colors */
+    --primary: 45 100% 50%;
+    --primary-foreground: 230 25% 8%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 25 100% 50%;
+    --secondary-foreground: 45 100% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 230 15% 20%;
+    --muted-foreground: 230 10% 60%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 0 85% 55%;
+    --accent-foreground: 45 100% 95%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 45 100% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 230 20% 25%;
+    --input: 230 20% 20%;
+    --ring: 45 100% 50%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom fighting game colors */
+    --health-full: 120 70% 45%;
+    --health-mid: 45 100% 50%;
+    --health-low: 0 85% 55%;
+    
+    --fire-yellow: 45 100% 50%;
+    --fire-orange: 25 100% 50%;
+    --fire-red: 0 85% 55%;
+    
+    --neon-blue: 200 100% 60%;
+    --neon-cyan: 180 100% 50%;
+    
+    --arena-dark: 230 25% 5%;
+    --arena-glow: 45 100% 50%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 230 25% 8%;
+    --foreground: 45 100% 95%;
+    --card: 230 20% 12%;
+    --card-foreground: 45 100% 95%;
+    --popover: 230 20% 12%;
+    --popover-foreground: 45 100% 95%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 230 25% 8%;
+    --secondary: 25 100% 50%;
+    --secondary-foreground: 45 100% 95%;
+    --muted: 230 15% 20%;
+    --muted-foreground: 230 10% 60%;
+    --accent: 0 85% 55%;
+    --accent-foreground: 45 100% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 45 100% 95%;
+    --border: 230 20% 25%;
+    --input: 230 20% 20%;
+    --ring: 45 100% 50%;
   }
 }
 
@@ -100,6 +83,258 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-pixel;
   }
+}
+
+@layer components {
+  .fire-gradient {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--fire-yellow)) 0%,
+      hsl(var(--fire-orange)) 50%,
+      hsl(var(--fire-red)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .fire-border {
+    border: 3px solid transparent;
+    background: 
+      linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+      linear-gradient(
+        135deg,
+        hsl(var(--fire-yellow)),
+        hsl(var(--fire-orange)),
+        hsl(var(--fire-red))
+      ) border-box;
+  }
+
+  .arcade-button {
+    @apply relative px-8 py-4 font-pixel text-lg uppercase tracking-wider;
+    @apply transition-all duration-150 ease-out;
+    background: linear-gradient(
+      180deg,
+      hsl(var(--fire-yellow)) 0%,
+      hsl(var(--fire-orange)) 100%
+    );
+    color: hsl(var(--background));
+    text-shadow: 2px 2px 0 hsl(var(--fire-red) / 0.5);
+    box-shadow: 
+      0 4px 0 hsl(var(--fire-red)),
+      0 8px 20px hsl(var(--fire-orange) / 0.4);
+  }
+
+  .arcade-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 6px 0 hsl(var(--fire-red)),
+      0 12px 30px hsl(var(--fire-orange) / 0.6);
+  }
+
+  .arcade-button:active {
+    transform: translateY(4px);
+    box-shadow: 
+      0 0 0 hsl(var(--fire-red)),
+      0 2px 10px hsl(var(--fire-orange) / 0.4);
+  }
+
+  .arcade-button-secondary {
+    @apply relative px-6 py-3 font-pixel text-sm uppercase tracking-wider;
+    @apply transition-all duration-150 ease-out;
+    background: linear-gradient(
+      180deg,
+      hsl(var(--muted)) 0%,
+      hsl(230 15% 15%) 100%
+    );
+    color: hsl(var(--foreground));
+    border: 2px solid hsl(var(--border));
+    box-shadow: 
+      0 4px 0 hsl(230 20% 10%),
+      0 8px 20px hsl(0 0% 0% / 0.4);
+  }
+
+  .arcade-button-secondary:hover {
+    border-color: hsl(var(--fire-yellow));
+    box-shadow: 
+      0 4px 0 hsl(var(--fire-red) / 0.5),
+      0 8px 20px hsl(var(--fire-orange) / 0.3);
+  }
+
+  .character-card {
+    @apply relative p-2 rounded-lg transition-all duration-200;
+    background: linear-gradient(
+      180deg,
+      hsl(var(--card)) 0%,
+      hsl(230 20% 8%) 100%
+    );
+    border: 3px solid hsl(var(--border));
+  }
+
+  .character-card:hover,
+  .character-card.selected {
+    border-color: hsl(var(--fire-yellow));
+    box-shadow: 
+      0 0 20px hsl(var(--fire-yellow) / 0.5),
+      0 0 40px hsl(var(--fire-orange) / 0.3),
+      inset 0 0 20px hsl(var(--fire-yellow) / 0.1);
+  }
+
+  .character-card.selected {
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+
+  .map-card {
+    @apply relative overflow-hidden rounded-lg transition-all duration-200;
+    border: 3px solid hsl(var(--border));
+  }
+
+  .map-card:hover,
+  .map-card.selected {
+    border-color: hsl(var(--fire-yellow));
+    box-shadow: 
+      0 0 20px hsl(var(--fire-yellow) / 0.5),
+      0 0 40px hsl(var(--fire-orange) / 0.3);
+  }
+
+  .health-bar {
+    @apply relative h-6 rounded overflow-hidden;
+    background: linear-gradient(
+      180deg,
+      hsl(230 20% 20%) 0%,
+      hsl(230 25% 10%) 100%
+    );
+    border: 2px solid hsl(var(--border));
+  }
+
+  .health-bar-fill {
+    @apply h-full transition-all duration-300 ease-out;
+    box-shadow: inset 0 2px 4px hsl(0 0% 100% / 0.3);
+  }
+
+  .health-bar-fill.health-high {
+    background: linear-gradient(
+      180deg,
+      hsl(120 70% 55%) 0%,
+      hsl(120 70% 35%) 100%
+    );
+  }
+
+  .health-bar-fill.health-mid {
+    background: linear-gradient(
+      180deg,
+      hsl(45 100% 55%) 0%,
+      hsl(35 100% 40%) 100%
+    );
+  }
+
+  .health-bar-fill.health-low {
+    background: linear-gradient(
+      180deg,
+      hsl(0 85% 60%) 0%,
+      hsl(0 85% 40%) 100%
+    );
+    animation: health-pulse 0.5s ease-in-out infinite;
+  }
+
+  .fighter {
+    @apply absolute bottom-0 transition-all duration-75;
+    image-rendering: pixelated;
+  }
+
+  .pause-overlay {
+    @apply fixed inset-0 flex items-center justify-center z-50;
+    background: hsl(var(--background) / 0.9);
+    backdrop-filter: blur(4px);
+  }
+}
+
+@layer utilities {
+  .font-pixel {
+    font-family: 'Press Start 2P', cursive;
+  }
+
+  .text-shadow-fire {
+    text-shadow: 
+      0 0 10px hsl(var(--fire-yellow) / 0.8),
+      0 0 20px hsl(var(--fire-orange) / 0.6),
+      0 0 30px hsl(var(--fire-red) / 0.4);
+  }
+
+  .text-shadow-dark {
+    text-shadow: 
+      2px 2px 0 hsl(var(--background)),
+      4px 4px 0 hsl(var(--background) / 0.5);
+  }
+
+  .glow-fire {
+    box-shadow: 
+      0 0 20px hsl(var(--fire-yellow) / 0.5),
+      0 0 40px hsl(var(--fire-orange) / 0.3),
+      0 0 60px hsl(var(--fire-red) / 0.2);
+  }
+
+  .animate-idle {
+    animation: idle-bounce 0.8s ease-in-out infinite;
+  }
+
+  .animate-hit {
+    animation: hit-shake 0.15s ease-out;
+  }
+
+  .animate-attack {
+    animation: attack-lunge 0.2s ease-out;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px hsl(var(--fire-yellow) / 0.5),
+      0 0 40px hsl(var(--fire-orange) / 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px hsl(var(--fire-yellow) / 0.7),
+      0 0 60px hsl(var(--fire-orange) / 0.5);
+  }
+}
+
+@keyframes health-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes idle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes hit-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+@keyframes attack-lunge {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(30px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes float-up {
+  0% { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% { 
+    opacity: 0;
+    transform: translateY(-50px) scale(1.5);
+  }
+}
+
+.animate-damage-number {
+  animation: float-up 0.8s ease-out forwards;
 }
