@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Character, GameMap, Fighter as FighterType, GameMode, PLAYER1_CONTROLS, PLAYER2_CONTROLS } from '@/types/game';
 import { GAME_CONFIG } from '@/data/gameData';
 import { HealthBar } from './HealthBar';
-import { Fighter } from './Fighter';
+import { AnimatedFighter } from './AnimatedFighter';
 import { PauseMenu } from './PauseMenu';
 import { VictoryScreen } from './VictoryScreen';
 
@@ -507,8 +507,8 @@ export function FightScreen({
             className="absolute bottom-0 left-0 right-0"
             style={{ height: GAME_CONFIG.ARENA_HEIGHT }}
           >
-            <Fighter fighter={fighter1} />
-            <Fighter fighter={fighter2} isPlayer2 />
+            <AnimatedFighter fighter={fighter1} />
+            <AnimatedFighter fighter={fighter2} isPlayer2 />
           </div>
 
           {/* Damage numbers */}
