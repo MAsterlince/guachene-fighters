@@ -1,50 +1,53 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Fighter as FighterType } from '@/types/game';
-import { CHARACTER_SPRITES, SPRITE_DIMENSIONS } from '@/data/characterSprites';
-import { useSpriteAnimation } from '@/hooks/useSpriteAnimation';
+import { CHARACTER_SPRITES } from '@/data/characterSprites';
+import { useSpriteAnimation, SPRITE_CONFIGS } from '@/hooks/useSpriteAnimation';
 
 interface AnimatedFighterProps {
   fighter: FighterType;
   isPlayer2?: boolean;
 }
 
-const STATE_TO_SPRITE_KEY: Record<string, keyof typeof CHARACTER_SPRITES.andres> = {
-  idle: 'idle',
-  walking: 'walk',
-  jumping: 'jump',
-  blocking: 'block',
-  attacking: 'lightAttack',
-  hit: 'hit',
-  defeated: 'defeat',
-  victory: 'victory',
-};
-
 export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterProps) {
   const characterId = fighter.character.id;
   const sprites = CHARACTER_SPRITES[characterId];
   
-  const { currentFrame, getFramePosition, spriteKey } = useSpriteAnimation({
+  const { hasAnimation, spriteKey, getFrameStyle } = useSpriteAnimation({
     characterId,
     state: fighter.state,
+    attackType: fighter.attackType === 'none' ? undefined : fighter.attackType,
     isActive: true,
   });
 
   // Get the appropriate sprite for current state
-  const currentSprite = useMemo(() => {
+  const getCurrentSprite = () => {
     if (!sprites) return fighter.character.image;
     
-    const stateKey = STATE_TO_SPRITE_KEY[fighter.state] || 'idle';
-    
-    // For heavy attack, use special/heavyAttack sprite
-    if (fighter.state === 'attacking' && fighter.attackType === 'heavy') {
-      return sprites.heavyAttack || sprites.lightAttack;
+    switch (fighter.state) {
+      case 'walking':
+        return sprites.walk;
+      case 'jumping':
+        return sprites.jump;
+      case 'blocking':
+        return sprites.block;
+      case 'attacking':
+        return fighter.attackType === 'heavy' 
+          ? (sprites.heavyAttack || sprites.special || sprites.lightAttack)
+          : sprites.lightAttack;
+      case 'hit':
+        return sprites.hit;
+      case 'defeated':
+        return sprites.defeat;
+      case 'victory':
+        return sprites.victory;
+      default:
+        return sprites.idle;
     }
-    
-    return sprites[stateKey] || sprites.idle;
-  }, [sprites, fighter.state, fighter.attackType, fighter.character.image]);
+  };
 
-  const framePosition = getFramePosition();
-  const hasSpriteSheet = SPRITE_DIMENSIONS[characterId]?.[spriteKey];
+  const currentSprite = getCurrentSprite();
+  const config = SPRITE_CONFIGS[characterId]?.[spriteKey];
+  const frameStyle = getFrameStyle(1, 1); // We'll use percentages
 
   const getTransform = () => {
     const scaleX = fighter.facingRight ? 1 : -1;
@@ -52,90 +55,69 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
     return `scaleX(${scaleX}) translateY(${translateY}px)`;
   };
 
-  const getAnimationClass = () => {
-    switch (fighter.state) {
-      case 'idle':
-        return hasSpriteSheet ? '' : 'animate-idle';
-      case 'hit':
-        return 'animate-hit';
-      case 'attacking':
-        return 'animate-attack';
-      case 'defeated':
-        return 'opacity-70';
-      case 'victory':
-        return 'scale-105';
-      default:
-        return '';
+  const getFilter = () => {
+    if (fighter.state === 'blocking') {
+      return 'brightness(0.85) drop-shadow(0 0 10px rgba(0, 255, 255, 0.6))';
     }
+    if (fighter.state === 'hit') {
+      return 'brightness(1.8) saturate(0.3) drop-shadow(0 0 15px rgba(255, 0, 0, 0.8))';
+    }
+    if (fighter.state === 'defeated') {
+      return 'grayscale(0.5) brightness(0.7)';
+    }
+    return 'none';
   };
 
   return (
     <div
-      className={`fighter ${getAnimationClass()}`}
+      className="fighter"
       style={{
         left: fighter.x,
         bottom: 0,
-        width: 180,
-        height: 280,
+        width: 200,
+        height: 300,
         transform: getTransform(),
         transformOrigin: 'bottom center',
       }}
     >
-      {/* Fighter sprite */}
-      {hasSpriteSheet ? (
-        <div
-          className="w-full h-full"
-          style={{
-            backgroundImage: `url(${currentSprite})`,
-            backgroundSize: `${framePosition.width * (SPRITE_DIMENSIONS[characterId]?.[spriteKey]?.cols || 1)}% ${framePosition.height * (SPRITE_DIMENSIONS[characterId]?.[spriteKey]?.rows || 1)}%`,
-            backgroundPosition: `${framePosition.x}% ${framePosition.y}%`,
-            backgroundRepeat: 'no-repeat',
-            imageRendering: 'pixelated',
-            filter: fighter.state === 'blocking' 
-              ? 'brightness(0.8) saturate(1.2)' 
-              : fighter.state === 'hit'
-              ? 'brightness(1.5) saturate(0.5)'
-              : 'none',
-            transition: 'filter 0.1s',
-          }}
-        />
-      ) : (
-        <img
-          src={currentSprite}
-          alt={fighter.character.name}
-          className="w-full h-full object-contain object-bottom"
-          style={{
-            filter: fighter.state === 'blocking' 
-              ? 'brightness(0.8) saturate(1.2)' 
-              : fighter.state === 'hit'
-              ? 'brightness(1.5) saturate(0.5)'
-              : 'none',
-            transition: 'filter 0.1s',
-            imageRendering: 'auto',
-          }}
-        />
-      )}
+      {/* Fighter sprite with frame extraction */}
+      <div
+        className="w-full h-full"
+        style={{
+          backgroundImage: `url(${currentSprite})`,
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: hasAnimation && config 
+            ? `${config.cols * 100}% ${config.rows * 100}%`
+            : 'contain',
+          backgroundPosition: hasAnimation && config
+            ? frameStyle.backgroundPosition
+            : 'center bottom',
+          imageRendering: 'auto',
+          filter: getFilter(),
+          transition: 'filter 0.1s',
+        }}
+      />
       
       {/* Attack effect */}
       {fighter.isAttacking && (
         <div 
-          className={`absolute ${fighter.facingRight ? 'right-0 translate-x-full' : 'left-0 -translate-x-full'} top-1/3`}
+          className={`absolute ${fighter.facingRight ? 'right-0 translate-x-3/4' : 'left-0 -translate-x-3/4'} top-1/3`}
           style={{
-            width: fighter.attackType === 'heavy' ? 100 : 60,
-            height: fighter.attackType === 'heavy' ? 100 : 60,
+            width: fighter.attackType === 'heavy' ? 80 : 50,
+            height: fighter.attackType === 'heavy' ? 80 : 50,
           }}
         >
           <div 
             className={`w-full h-full rounded-full ${
               fighter.attackType === 'heavy' 
-                ? 'bg-gradient-to-r from-fire-red/70 to-fire-yellow/70' 
-                : 'bg-gradient-to-r from-fire-yellow/60 to-fire-orange/60'
+                ? 'bg-gradient-radial from-white/80 via-fire-yellow/60 to-fire-red/40' 
+                : 'bg-gradient-radial from-white/60 via-fire-yellow/50 to-transparent'
             }`}
             style={{
-              animation: 'scale-in 0.15s ease-out',
+              animation: 'attack-flash 0.15s ease-out',
               boxShadow: fighter.attackType === 'heavy'
-                ? '0 0 40px rgba(255, 100, 50, 0.8), 0 0 60px rgba(255, 50, 0, 0.5)'
-                : '0 0 25px rgba(255, 200, 50, 0.7)',
+                ? '0 0 40px rgba(255, 100, 50, 0.9), 0 0 80px rgba(255, 50, 0, 0.6)'
+                : '0 0 25px rgba(255, 200, 50, 0.8)',
             }}
           />
         </div>
@@ -143,12 +125,14 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
       
       {/* Blocking shield effect */}
       {fighter.isBlocking && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div 
-            className="w-36 h-44 rounded-full border-4 border-neon-cyan/60 bg-neon-cyan/15"
+            className="w-40 h-56 rounded-full"
             style={{
-              boxShadow: '0 0 30px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.2)',
-              animation: 'pulse 1s ease-in-out infinite',
+              background: 'radial-gradient(ellipse at center, rgba(0, 255, 255, 0.15) 0%, transparent 70%)',
+              border: '3px solid rgba(0, 255, 255, 0.5)',
+              boxShadow: '0 0 30px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.1)',
+              animation: 'pulse 0.8s ease-in-out infinite',
             }}
           />
         </div>
@@ -156,7 +140,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
       
       {/* Player indicator */}
       <div 
-        className={`absolute -top-10 left-1/2 px-3 py-1.5 rounded-lg text-[10px] font-pixel uppercase tracking-wide ${
+        className={`absolute -top-8 left-1/2 px-2 py-1 rounded text-[8px] font-pixel uppercase tracking-wide ${
           isPlayer2 
             ? 'bg-gradient-to-r from-fire-red to-fire-orange' 
             : 'bg-gradient-to-r from-neon-blue to-neon-cyan'
@@ -164,8 +148,8 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
         style={{ 
           transform: `scaleX(${fighter.facingRight ? 1 : -1}) translateX(-50%)`,
           boxShadow: isPlayer2 
-            ? '0 0 15px rgba(255, 100, 50, 0.6)' 
-            : '0 0 15px rgba(0, 200, 255, 0.6)',
+            ? '0 0 10px rgba(255, 100, 50, 0.7)' 
+            : '0 0 10px rgba(0, 200, 255, 0.7)',
         }}
       >
         {isPlayer2 ? 'P2' : 'P1'}
