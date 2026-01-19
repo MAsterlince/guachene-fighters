@@ -1,18 +1,31 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { SPRITE_DIMENSIONS } from '@/data/characterSprites';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
-interface UseSpriteAnimationProps {
-  characterId: string;
-  state: string;
-  isActive: boolean;
+interface SpriteConfig {
+  cols: number;
+  rows: number;
+  totalFrames?: number; // If not all cells are used
+  frameDuration: number;
+  loop: boolean;
 }
 
-interface SpriteFrame {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+// Sprite sheet configurations with actual frame counts
+export const SPRITE_CONFIGS: Record<string, Record<string, SpriteConfig>> = {
+  andres: {
+    idle: { cols: 1, rows: 1, totalFrames: 1, frameDuration: 500, loop: true },
+    walk: { cols: 4, rows: 1, totalFrames: 4, frameDuration: 120, loop: true },
+    jump: { cols: 3, rows: 1, totalFrames: 3, frameDuration: 100, loop: false },
+    block: { cols: 1, rows: 1, totalFrames: 1, frameDuration: 200, loop: true },
+    lightAttack: { cols: 1, rows: 1, totalFrames: 1, frameDuration: 100, loop: false },
+    heavyAttack: { cols: 3, rows: 2, totalFrames: 5, frameDuration: 80, loop: false },
+    hit: { cols: 1, rows: 2, totalFrames: 2, frameDuration: 100, loop: false },
+    defeat: { cols: 2, rows: 4, totalFrames: 7, frameDuration: 150, loop: false },
+    victory: { cols: 4, rows: 1, totalFrames: 4, frameDuration: 180, loop: true },
+  },
+  // Other characters use single images for now
+  camilo: {},
+  oliver: {},
+  jordan: {},
+};
 
 const STATE_TO_SPRITE_KEY: Record<string, string> = {
   idle: 'idle',
@@ -25,85 +38,103 @@ const STATE_TO_SPRITE_KEY: Record<string, string> = {
   victory: 'victory',
 };
 
-const ANIMATION_SPEEDS: Record<string, number> = {
-  idle: 500,
-  walk: 150,
-  jump: 100,
-  block: 200,
-  lightAttack: 100,
-  heavyAttack: 80,
-  hit: 100,
-  defeat: 150,
-  victory: 200,
-};
+interface UseSpriteAnimationProps {
+  characterId: string;
+  state: string;
+  attackType?: 'light' | 'heavy' | 'none';
+  isActive: boolean;
+}
 
-export function useSpriteAnimation({ characterId, state, isActive }: UseSpriteAnimationProps) {
+export function useSpriteAnimation({ 
+  characterId, 
+  state, 
+  attackType = 'none',
+  isActive 
+}: UseSpriteAnimationProps) {
   const [currentFrame, setCurrentFrame] = useState(0);
   const frameTimerRef = useRef<number>();
   const lastStateRef = useRef(state);
+  const lastAttackTypeRef = useRef(attackType);
 
-  const spriteKey = STATE_TO_SPRITE_KEY[state] || 'idle';
-  const dimensions = SPRITE_DIMENSIONS[characterId]?.[spriteKey];
-  
-  const totalFrames = dimensions ? dimensions.cols * dimensions.rows : 1;
-  const speed = ANIMATION_SPEEDS[spriteKey] || 150;
-  const shouldLoop = ['idle', 'walk', 'victory'].includes(spriteKey);
+  // Determine which sprite key to use
+  const spriteKey = useMemo(() => {
+    if (state === 'attacking') {
+      return attackType === 'heavy' ? 'heavyAttack' : 'lightAttack';
+    }
+    return STATE_TO_SPRITE_KEY[state] || 'idle';
+  }, [state, attackType]);
 
-  // Reset frame when state changes
+  const config = SPRITE_CONFIGS[characterId]?.[spriteKey];
+  const hasAnimation = !!config && config.totalFrames && config.totalFrames > 1;
+  const totalFrames = config?.totalFrames || 1;
+  const frameDuration = config?.frameDuration || 150;
+  const shouldLoop = config?.loop ?? true;
+
+  // Reset frame when state or attack type changes
   useEffect(() => {
-    if (lastStateRef.current !== state) {
+    if (lastStateRef.current !== state || lastAttackTypeRef.current !== attackType) {
       setCurrentFrame(0);
       lastStateRef.current = state;
+      lastAttackTypeRef.current = attackType;
     }
-  }, [state]);
+  }, [state, attackType]);
 
   // Animate frames
   useEffect(() => {
-    if (!isActive || totalFrames <= 1) return;
+    if (!isActive || !hasAnimation) return;
 
     const animate = () => {
       setCurrentFrame(prev => {
         const next = prev + 1;
         if (next >= totalFrames) {
-          return shouldLoop ? 0 : prev;
+          return shouldLoop ? 0 : totalFrames - 1;
         }
         return next;
       });
     };
 
-    frameTimerRef.current = window.setInterval(animate, speed);
+    frameTimerRef.current = window.setInterval(animate, frameDuration);
 
     return () => {
       if (frameTimerRef.current) {
         clearInterval(frameTimerRef.current);
       }
     };
-  }, [isActive, totalFrames, speed, shouldLoop, state]);
+  }, [isActive, hasAnimation, totalFrames, frameDuration, shouldLoop, state, attackType]);
 
-  const getFramePosition = useCallback((): SpriteFrame => {
-    if (!dimensions) {
-      return { x: 0, y: 0, width: 100, height: 100 };
+  // Calculate the exact pixel position for background-position
+  const getFrameStyle = useCallback((spriteWidth: number, spriteHeight: number) => {
+    if (!config) {
+      return {
+        backgroundSize: 'contain',
+        backgroundPosition: 'center bottom',
+      };
     }
 
-    const col = currentFrame % dimensions.cols;
-    const row = Math.floor(currentFrame / dimensions.cols);
+    const { cols, rows } = config;
+    const col = currentFrame % cols;
+    const row = Math.floor(currentFrame / cols);
     
-    // Calculate percentage for background-position
-    const xPercent = dimensions.cols > 1 ? (col / (dimensions.cols - 1)) * 100 : 0;
-    const yPercent = dimensions.rows > 1 ? (row / (dimensions.rows - 1)) * 100 : 0;
+    // Frame dimensions
+    const frameWidth = spriteWidth / cols;
+    const frameHeight = spriteHeight / rows;
+    
+    // Background position as percentages
+    const xPercent = cols > 1 ? (col / (cols - 1)) * 100 : 50;
+    const yPercent = rows > 1 ? (row / (rows - 1)) * 100 : 0;
 
     return {
-      x: xPercent,
-      y: yPercent,
-      width: 100 / dimensions.cols,
-      height: 100 / dimensions.rows,
+      backgroundSize: `${cols * 100}% ${rows * 100}%`,
+      backgroundPosition: `${xPercent}% ${yPercent}%`,
     };
-  }, [currentFrame, dimensions]);
+  }, [currentFrame, config]);
 
   return {
     currentFrame,
     totalFrames,
-    getFramePosition,
+    hasAnimation,
     spriteKey,
+    config,
+    getFrameStyle,
   };
 }

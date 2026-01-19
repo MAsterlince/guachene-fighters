@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Character, GameMap, Fighter as FighterType, GameMode, PLAYER1_CONTROLS, PLAYER2_CONTROLS } from '@/types/game';
 import { GAME_CONFIG } from '@/data/gameData';
 import { HealthBar } from './HealthBar';
@@ -15,12 +15,16 @@ interface FightScreenProps {
   onMainMenu: () => void;
 }
 
+const ARENA_WIDTH = 1200;
+const ARENA_HEIGHT = 600;
+const PARALLAX_AMOUNT = 100; // How much the background moves
+
 const createFighter = (character: Character, isPlayer2: boolean): FighterType => ({
   id: character.id,
   name: character.name,
   health: GAME_CONFIG.MAX_HEALTH,
   maxHealth: GAME_CONFIG.MAX_HEALTH,
-  x: isPlayer2 ? GAME_CONFIG.ARENA_WIDTH - 250 : 100,
+  x: isPlayer2 ? ARENA_WIDTH - 300 : 100,
   y: 0,
   velocityX: 0,
   velocityY: 0,
@@ -58,6 +62,13 @@ export function FightScreen({
   const cpuActionTimer = useRef(0);
   const cpuAction = useRef<'idle' | 'approach' | 'attack' | 'retreat'>('idle');
 
+  // Calculate parallax offset based on fighters' average position
+  const parallaxOffset = useMemo(() => {
+    const centerX = (fighter1.x + fighter2.x) / 2;
+    const normalizedPosition = (centerX / ARENA_WIDTH) * 2 - 1; // -1 to 1
+    return -normalizedPosition * PARALLAX_AMOUNT;
+  }, [fighter1.x, fighter2.x]);
+
   const addDamageNumber = useCallback((x: number, y: number, damage: number) => {
     const id = damageIdRef.current++;
     setDamageNumbers(prev => [...prev, { id, x, y, damage }]);
@@ -67,8 +78,8 @@ export function FightScreen({
   }, []);
 
   const checkCollision = useCallback((attacker: FighterType, defender: FighterType): boolean => {
-    const attackerCenter = attacker.x + 75;
-    const defenderCenter = defender.x + 75;
+    const attackerCenter = attacker.x + 100;
+    const defenderCenter = defender.x + 100;
     const distance = Math.abs(attackerCenter - defenderCenter);
     return distance < GAME_CONFIG.ATTACK_RANGE;
   }, []);
@@ -118,7 +129,7 @@ export function FightScreen({
         };
       });
 
-      addDamageNumber(defender.x + 75, 150, damage);
+      addDamageNumber(defender.x + 100, 150, damage);
 
       if (!defender.isBlocking) {
         setTimeout(() => {
@@ -186,7 +197,7 @@ export function FightScreen({
           }
 
           // Boundaries
-          newX = Math.max(0, Math.min(GAME_CONFIG.ARENA_WIDTH - 150, newX));
+          newX = Math.max(0, Math.min(ARENA_WIDTH - 200, newX));
 
           const state = prev.isAttacking ? 'attacking' 
             : isBlocking ? 'blocking'
@@ -270,7 +281,7 @@ export function FightScreen({
               }
             }
 
-            newX = Math.max(0, Math.min(GAME_CONFIG.ARENA_WIDTH - 150, newX));
+            newX = Math.max(0, Math.min(ARENA_WIDTH - 200, newX));
 
             return {
               ...prev,
@@ -317,7 +328,7 @@ export function FightScreen({
               }
             }
 
-            newX = Math.max(0, Math.min(GAME_CONFIG.ARENA_WIDTH - 150, newX));
+            newX = Math.max(0, Math.min(ARENA_WIDTH - 200, newX));
 
             const state = prev.isAttacking ? 'attacking' 
               : isBlocking ? 'blocking'
@@ -368,7 +379,6 @@ export function FightScreen({
     const timer = setInterval(() => {
       setRoundTime(prev => {
         if (prev <= 0) {
-          // Time up - winner is whoever has more health
           if (fighter1.health > fighter2.health) {
             setWinner(1);
           } else if (fighter2.health > fighter1.health) {
@@ -439,96 +449,112 @@ export function FightScreen({
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center overflow-hidden">
-      {/* Fight arena */}
+    <div className="fixed inset-0 overflow-hidden bg-black">
+      {/* Full screen background with parallax */}
       <div 
-        className="relative"
-        style={{ 
-          width: GAME_CONFIG.ARENA_WIDTH, 
-          height: GAME_CONFIG.ARENA_HEIGHT + 100,
+        className="absolute inset-0 transition-transform duration-100"
+        style={{
+          transform: `translateX(${parallaxOffset}px) scale(1.15)`,
         }}
       >
-        {/* HUD */}
-        <div className="absolute top-0 left-0 right-0 z-20 p-4">
-          <div className="flex items-start justify-between gap-4">
-            {/* Player 1 health */}
-            <HealthBar 
-              health={fighter1.health} 
-              maxHealth={fighter1.maxHealth} 
-              playerName={fighter1.name}
-            />
+        <img 
+          src={selectedMap.image} 
+          alt={selectedMap.name}
+          className="w-full h-full object-cover"
+          style={{ imageRendering: 'auto' }}
+        />
+      </div>
 
-            {/* Timer */}
-            <div className="flex flex-col items-center">
-              <div 
-                className="w-20 h-20 rounded-full fire-border flex items-center justify-center bg-card"
-                style={{ boxShadow: '0 0 20px rgba(255, 165, 0, 0.3)' }}
-              >
-                <span className="text-2xl font-pixel fire-gradient">
-                  {roundTime}
-                </span>
-              </div>
-              <button 
-                onClick={() => setIsPaused(true)}
-                className="mt-2 text-xs font-pixel text-muted-foreground hover:text-fire-yellow transition-colors"
-              >
-                ESC = PAUSA
-              </button>
-            </div>
+      {/* Dark overlay at bottom for depth */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)',
+        }}
+      />
 
-            {/* Player 2 health */}
-            <HealthBar 
-              health={fighter2.health} 
-              maxHealth={fighter2.maxHealth} 
-              playerName={mode === 'cpu' ? `${fighter2.name} (CPU)` : fighter2.name}
-              isPlayer2
-            />
-          </div>
-        </div>
-
-        {/* Arena background */}
-        <div 
-          className="absolute bottom-0 left-0 right-0 overflow-hidden rounded-lg"
-          style={{ height: GAME_CONFIG.ARENA_HEIGHT }}
-        >
-          <img 
-            src={selectedMap.image} 
-            alt={selectedMap.name}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Ground line */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-fire-yellow/50 to-transparent"
+      {/* HUD Layer */}
+      <div className="absolute top-0 left-0 right-0 z-20 p-4">
+        <div className="flex items-start justify-between gap-4 max-w-6xl mx-auto">
+          {/* Player 1 health */}
+          <HealthBar 
+            health={fighter1.health} 
+            maxHealth={fighter1.maxHealth} 
+            playerName={fighter1.name}
           />
 
-          {/* Fighters */}
-          <div 
-            className="absolute bottom-0 left-0 right-0"
-            style={{ height: GAME_CONFIG.ARENA_HEIGHT }}
-          >
-            <AnimatedFighter fighter={fighter1} />
-            <AnimatedFighter fighter={fighter2} isPlayer2 />
-          </div>
-
-          {/* Damage numbers */}
-          {damageNumbers.map(({ id, x, y, damage }) => (
-            <div
-              key={id}
-              className="absolute font-pixel text-2xl text-fire-red animate-damage-number"
-              style={{ left: x, top: y }}
+          {/* Timer */}
+          <div className="flex flex-col items-center">
+            <div 
+              className="w-16 h-16 rounded-lg flex items-center justify-center"
+              style={{ 
+                background: 'linear-gradient(180deg, #444 0%, #222 100%)',
+                border: '3px solid #666',
+                boxShadow: '0 4px 0 #111, 0 0 20px rgba(255, 165, 0, 0.3)',
+              }}
             >
-              -{damage}
+              <span 
+                className="text-2xl font-pixel"
+                style={{
+                  color: roundTime <= 10 ? '#FF4444' : '#FFFF00',
+                  textShadow: '2px 2px 0 #000',
+                }}
+              >
+                {roundTime}
+              </span>
             </div>
-          ))}
-        </div>
+            <button 
+              onClick={() => setIsPaused(true)}
+              className="mt-2 text-[8px] font-pixel text-white/60 hover:text-white/90 transition-colors"
+            >
+              ESC = PAUSA
+            </button>
+          </div>
 
-        {/* Map name */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-          <span className="text-xs font-pixel text-muted-foreground/50">
-            {selectedMap.name}
-          </span>
+          {/* Player 2 health */}
+          <HealthBar 
+            health={fighter2.health} 
+            maxHealth={fighter2.maxHealth} 
+            playerName={mode === 'cpu' ? `${fighter2.name} (CPU)` : fighter2.name}
+            isPlayer2
+          />
         </div>
+      </div>
+
+      {/* Fight arena - positioned at bottom */}
+      <div 
+        className="absolute bottom-0 left-0 right-0"
+        style={{ height: ARENA_HEIGHT }}
+      >
+        {/* Fighters */}
+        <AnimatedFighter fighter={fighter1} />
+        <AnimatedFighter fighter={fighter2} isPlayer2 />
+
+        {/* Damage numbers */}
+        {damageNumbers.map(({ id, x, y, damage }) => (
+          <div
+            key={id}
+            className="absolute font-pixel text-2xl animate-damage-number"
+            style={{ 
+              left: x, 
+              top: y,
+              color: '#FF4444',
+              textShadow: '2px 2px 0 #000, 0 0 10px rgba(255, 0, 0, 0.8)',
+            }}
+          >
+            -{damage}
+          </div>
+        ))}
+      </div>
+
+      {/* Map name */}
+      <div className="absolute bottom-2 left-4">
+        <span 
+          className="text-[10px] font-pixel"
+          style={{ color: 'rgba(255,255,255,0.4)' }}
+        >
+          {selectedMap.name}
+        </span>
       </div>
 
       {/* Pause menu */}

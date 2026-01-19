@@ -334,6 +334,21 @@
   100% { transform: translateX(0); }
 }
 
+@keyframes attack-flash {
+  0% { 
+    transform: scale(0.3);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.9;
+  }
+  100% { 
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
 @keyframes float-up {
   0% { 
     opacity: 1;
@@ -341,10 +356,15 @@
   }
   100% { 
     opacity: 0;
-    transform: translateY(-50px) scale(1.5);
+    transform: translateY(-80px) scale(1.8);
   }
 }
 
 .animate-damage-number {
   animation: float-up 0.8s ease-out forwards;
+}
+
+/* Radial gradient utility */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
 }
