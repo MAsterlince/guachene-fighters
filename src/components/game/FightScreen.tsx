@@ -53,12 +53,20 @@ export function FightScreen({
   const [roundTime, setRoundTime] = useState(GAME_CONFIG.ROUND_TIME);
   const [damageNumbers, setDamageNumbers] = useState<Array<{ id: number; x: number; y: number; damage: number }>>([]);
   
+  // Knockout effects state
+  const [isKnockout, setIsKnockout] = useState(false);
+  const [knockoutFreeze, setKnockoutFreeze] = useState(false);
+  const [screenShake, setScreenShake] = useState(false);
+  
   const keysPressed = useRef<Set<string>>(new Set());
-  const prevKeysPressed = useRef<Set<string>>(new Set()); // Track previous frame keys for edge detection
   const gameLoopRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
   const attackCooldown = useRef<{ p1: number; p2: number }>({ p1: 0, p2: 0 });
   const damageIdRef = useRef(0);
+
+  // Jump release tracking for reliable edge detection
+  const p1JumpReleased = useRef(true);
+  const p2JumpReleased = useRef(true);
 
   // CPU AI state
   const cpuActionTimer = useRef(0);
@@ -132,7 +140,7 @@ export function FightScreen({
         return {
           ...prev,
           health: newHealth,
-          state: newHealth <= 0 ? 'defeated' : 'hit',
+          state: newHealth <= 0 ? 'hit' : 'hit', // Always show hit first, defeat comes after freeze
         };
       });
 
@@ -143,16 +151,16 @@ export function FightScreen({
         setTimeout(() => {
           setDefender(prev => ({
             ...prev,
-            state: prev.health > 0 ? 'idle' : 'defeated',
+            state: prev.health > 0 ? 'idle' : 'hit', // Keep hit state if defeated, will transition after freeze
           }));
-        }, 1000); // Match hit animation duration
+        }, 1000);
       }
     }
   }, [checkCollision, addDamageNumber]);
 
   // Game loop with smooth physics
   useEffect(() => {
-    if (isPaused || winner) return;
+    if (isPaused || winner || knockoutFreeze) return;
 
     const gameLoop = (currentTime: number) => {
       if (!lastTimeRef.current) lastTimeRef.current = currentTime;
@@ -211,14 +219,17 @@ export function FightScreen({
           if (newVelocityX < -0.5) facingRight = false;
           else if (newVelocityX > 0.5) facingRight = true;
 
-          // Jump - only trigger on key press (edge detection), not held
+          // Jump - reliable edge detection with ref
           const jumpKeyPressed = keysPressed.current.has(PLAYER1_CONTROLS.up);
-          const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER1_CONTROLS.up);
           
-          // Start jump only on fresh key press when grounded
-          if (jumpKeyPressed && !jumpKeyWasPressed && prev.y <= 0 && !prev.isJumping && !isBlocking) {
-            newVelocityY = GAME_CONFIG.JUMP_FORCE;
-            isJumping = true;
+          if (jumpKeyPressed) {
+            if (p1JumpReleased.current && prev.y <= 0 && !prev.isJumping && !isBlocking) {
+              newVelocityY = GAME_CONFIG.JUMP_FORCE;
+              isJumping = true;
+              p1JumpReleased.current = false;
+            }
+          } else {
+            p1JumpReleased.current = true;
           }
 
           // Apply gravity and vertical movement
@@ -419,13 +430,17 @@ export function FightScreen({
             if (newVelocityX < -0.5) facingRight = false;
             else if (newVelocityX > 0.5) facingRight = true;
 
-            // Jump edge detection - only on fresh key press when grounded
+            // Jump - reliable edge detection with ref
             const jumpKeyPressed = keysPressed.current.has(PLAYER2_CONTROLS.up);
-            const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER2_CONTROLS.up);
             
-            if (jumpKeyPressed && !jumpKeyWasPressed && prev.y <= 0 && !prev.isJumping && !isBlocking) {
-              newVelocityY = GAME_CONFIG.JUMP_FORCE;
-              isJumping = true;
+            if (jumpKeyPressed) {
+              if (p2JumpReleased.current && prev.y <= 0 && !prev.isJumping && !isBlocking) {
+                newVelocityY = GAME_CONFIG.JUMP_FORCE;
+                isJumping = true;
+                p2JumpReleased.current = false;
+              }
+            } else {
+              p2JumpReleased.current = true;
             }
 
             // Apply gravity and vertical movement
@@ -471,9 +486,6 @@ export function FightScreen({
             };
           });
         }
-
-        // Update previous keys for next frame edge detection
-        prevKeysPressed.current = new Set(keysPressed.current);
       }
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -483,40 +495,90 @@ export function FightScreen({
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [isPaused, winner, mode, handleAttack, fighter1.x]);
+  }, [isPaused, winner, knockoutFreeze, mode, handleAttack, fighter1.x]);
 
-  // Check for winner and add delay before showing victory screen
+  // Check for winner with knockout effects
   useEffect(() => {
-    if (fighter1.health <= 0 && !winner) {
-      setWinner(2);
-      setFighter1(prev => ({ ...prev, state: 'defeated' }));
-      setFighter2(prev => ({ ...prev, state: 'victory' }));
-      setTimeout(() => setShowVictoryScreen(true), 3000);
-    } else if (fighter2.health <= 0 && !winner) {
-      setWinner(1);
-      setFighter2(prev => ({ ...prev, state: 'defeated' }));
-      setFighter1(prev => ({ ...prev, state: 'victory' }));
-      setTimeout(() => setShowVictoryScreen(true), 3000);
+    if (winner || isKnockout) return;
+
+    const checkKnockout = (loserHealth: number, winnerNum: 1 | 2) => {
+      if (loserHealth <= 0) {
+        setIsKnockout(true);
+        setScreenShake(true);
+        setKnockoutFreeze(true);
+
+        // Stop shake after 500ms
+        setTimeout(() => setScreenShake(false), 500);
+
+        // After 1 second freeze, transition to defeat animation
+        setTimeout(() => {
+          setKnockoutFreeze(false);
+          
+          if (winnerNum === 1) {
+            setFighter2(prev => ({ ...prev, state: 'defeated' }));
+            setFighter1(prev => ({ 
+              ...prev, 
+              state: 'victory',
+              // Move winner away from loser
+              x: Math.max(50, prev.x - 100)
+            }));
+          } else {
+            setFighter1(prev => ({ ...prev, state: 'defeated' }));
+            setFighter2(prev => ({ 
+              ...prev, 
+              state: 'victory',
+              // Move winner away from loser  
+              x: Math.min(ARENA_WIDTH - 300, prev.x + 100)
+            }));
+          }
+          
+          setWinner(winnerNum);
+          
+          // Show victory screen after animations play
+          setTimeout(() => setShowVictoryScreen(true), 2500);
+        }, 1000);
+      }
+    };
+
+    if (fighter1.health <= 0) {
+      checkKnockout(fighter1.health, 2);
+    } else if (fighter2.health <= 0) {
+      checkKnockout(fighter2.health, 1);
     }
-  }, [fighter1.health, fighter2.health, winner]);
+  }, [fighter1.health, fighter2.health, winner, isKnockout]);
 
   // Timer
   useEffect(() => {
-    if (isPaused || winner) return;
+    if (isPaused || winner || isKnockout) return;
     
     const timer = setInterval(() => {
       setRoundTime(prev => {
         if (prev <= 0) {
-          if (fighter1.health > fighter2.health) {
-            setWinner(1);
-            setFighter2(prev => ({ ...prev, state: 'defeated' }));
-            setFighter1(prev => ({ ...prev, state: 'victory' }));
-          } else if (fighter2.health > fighter1.health) {
-            setWinner(2);
-            setFighter1(prev => ({ ...prev, state: 'defeated' }));
-            setFighter2(prev => ({ ...prev, state: 'victory' }));
-          }
-          setTimeout(() => setShowVictoryScreen(true), 3000);
+          setIsKnockout(true);
+          setScreenShake(true);
+          setTimeout(() => setScreenShake(false), 500);
+          
+          setTimeout(() => {
+            if (fighter1.health > fighter2.health) {
+              setWinner(1);
+              setFighter2(prev => ({ ...prev, state: 'defeated' }));
+              setFighter1(prev => ({ 
+                ...prev, 
+                state: 'victory',
+                x: Math.max(50, prev.x - 100)
+              }));
+            } else if (fighter2.health > fighter1.health) {
+              setWinner(2);
+              setFighter1(prev => ({ ...prev, state: 'defeated' }));
+              setFighter2(prev => ({ 
+                ...prev, 
+                state: 'victory',
+                x: Math.min(ARENA_WIDTH - 300, prev.x + 100)
+              }));
+            }
+            setTimeout(() => setShowVictoryScreen(true), 2500);
+          }, 1000);
+          
           return 0;
         }
         return prev - 1;
@@ -524,7 +586,7 @@ export function FightScreen({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPaused, winner, fighter1.health, fighter2.health]);
+  }, [isPaused, winner, isKnockout, fighter1.health, fighter2.health]);
 
   // Keyboard handlers
   useEffect(() => {
@@ -536,7 +598,7 @@ export function FightScreen({
         return;
       }
 
-      if (isPaused || winner) return;
+      if (isPaused || winner || knockoutFreeze) return;
       
       keysPressed.current.add(key);
 
@@ -571,7 +633,7 @@ export function FightScreen({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isPaused, winner, fighter1, fighter2, mode, handleAttack]);
+  }, [isPaused, winner, knockoutFreeze, fighter1, fighter2, mode, handleAttack]);
 
   const handleRematch = () => {
     setFighter1(createFighter(player1Character, false));
@@ -579,14 +641,21 @@ export function FightScreen({
     setWinner(null);
     setShowVictoryScreen(false);
     setRoundTime(GAME_CONFIG.ROUND_TIME);
+    setIsKnockout(false);
+    setKnockoutFreeze(false);
+    setScreenShake(false);
     attackCooldown.current = { p1: 0, p2: 0 };
+    p1JumpReleased.current = true;
+    p2JumpReleased.current = true;
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black">
-      {/* Full screen background with parallax */}
+    <div 
+      className={`fixed inset-0 overflow-hidden bg-black ${screenShake ? 'animate-screen-shake' : ''}`}
+    >
+      {/* Full screen background with parallax and flash effect */}
       <div 
-        className="absolute inset-0 transition-transform duration-100"
+        className={`absolute inset-0 transition-transform duration-100 ${isKnockout && !showVictoryScreen ? 'animate-bg-flash' : ''}`}
         style={{
           transform: `translateX(${parallaxOffset}px) scale(1.15)`,
         }}
@@ -687,6 +756,34 @@ export function FightScreen({
         @keyframes fadeUp {
           0% { opacity: 1; transform: translateY(0); }
           100% { opacity: 0; transform: translateY(-50px); }
+        }
+        
+        @keyframes screenShake {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          10% { transform: translateX(-8px) translateY(-2px); }
+          20% { transform: translateX(8px) translateY(2px); }
+          30% { transform: translateX(-6px) translateY(-1px); }
+          40% { transform: translateX(6px) translateY(1px); }
+          50% { transform: translateX(-4px) translateY(-1px); }
+          60% { transform: translateX(4px) translateY(1px); }
+          70% { transform: translateX(-3px) translateY(0); }
+          80% { transform: translateX(3px) translateY(0); }
+          90% { transform: translateX(-1px) translateY(0); }
+        }
+        
+        @keyframes bgFlash {
+          0%, 100% { filter: brightness(1); }
+          25% { filter: brightness(1.4); }
+          50% { filter: brightness(1); }
+          75% { filter: brightness(1.2); }
+        }
+        
+        .animate-screen-shake {
+          animation: screenShake 0.5s ease-out;
+        }
+        
+        .animate-bg-flash {
+          animation: bgFlash 1.5s ease-in-out infinite;
         }
       `}</style>
     </div>

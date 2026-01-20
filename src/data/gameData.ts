@@ -62,7 +62,7 @@ export const GAME_CONFIG = {
   FIGHTER_HEIGHT: 200,
   GRAVITY: 0.8,
   JUMP_FORCE: 20, // Higher jump force for better gameplay
-  MOVE_SPEED: 8, // Fast and fluid movement
+  MOVE_SPEED: 6, // Balanced speed for better control
   LIGHT_DAMAGE: 8,
   HEAVY_DAMAGE: 15,
   LIGHT_ATTACK_RANGE: 140, // Medium range for light attacks
