@@ -215,23 +215,31 @@ export function FightScreen({
           const jumpKeyPressed = keysPressed.current.has(PLAYER1_CONTROLS.up);
           const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER1_CONTROLS.up);
           
-          if (jumpKeyPressed && !jumpKeyWasPressed && !isJumping && !isBlocking) {
+          // Start jump only on fresh key press when grounded
+          if (jumpKeyPressed && !jumpKeyWasPressed && prev.y === 0 && !isBlocking) {
             newVelocityY = GAME_CONFIG.JUMP_FORCE;
             isJumping = true;
           }
 
           // Apply gravity and vertical movement
           let newY = prev.y;
-          if (isJumping || newY > 0) {
-            newVelocityY -= GAME_CONFIG.GRAVITY; // Apply gravity first
-            newY += newVelocityY; // Then update position
-            
-            // Landing on ground
-            if (newY <= 0) {
-              newY = 0;
-              newVelocityY = 0;
-              isJumping = false;
-            }
+          
+          // Apply gravity when in air
+          if (prev.y > 0 || newVelocityY > 0) {
+            newY = prev.y + newVelocityY;
+            newVelocityY -= GAME_CONFIG.GRAVITY;
+            isJumping = true;
+          }
+          
+          // Landing on ground
+          if (newY <= 0 && prev.y > 0) {
+            newY = 0;
+            newVelocityY = 0;
+            isJumping = false;
+          } else if (newY < 0) {
+            newY = 0;
+            newVelocityY = 0;
+            isJumping = false;
           }
 
           // Apply horizontal velocity
@@ -325,21 +333,28 @@ export function FightScreen({
               }
             }
 
-            // Random jump
-            if (Math.random() < 0.01 && !isJumping) {
+            // Random jump - only when grounded
+            if (Math.random() < 0.01 && prev.y === 0) {
               newVelocityY = GAME_CONFIG.JUMP_FORCE;
               isJumping = true;
             }
 
-            // Gravity
-            if (isJumping || newY > 0) {
+            // Gravity - apply when in air
+            if (prev.y > 0 || newVelocityY > 0) {
+              newY = prev.y + newVelocityY;
               newVelocityY -= GAME_CONFIG.GRAVITY;
-              newY += newVelocityY;
-              if (newY <= 0) {
-                newY = 0;
-                newVelocityY = 0;
-                isJumping = false;
-              }
+              isJumping = true;
+            }
+            
+            // Landing on ground
+            if (newY <= 0 && prev.y > 0) {
+              newY = 0;
+              newVelocityY = 0;
+              isJumping = false;
+            } else if (newY < 0) {
+              newY = 0;
+              newVelocityY = 0;
+              isJumping = false;
             }
 
             let newX = prev.x + newVelocityX;
@@ -404,25 +419,34 @@ export function FightScreen({
             if (newVelocityX < -0.5) facingRight = false;
             else if (newVelocityX > 0.5) facingRight = true;
 
-            // Jump edge detection
+            // Jump edge detection - only on fresh key press when grounded
             const jumpKeyPressed = keysPressed.current.has(PLAYER2_CONTROLS.up);
             const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER2_CONTROLS.up);
             
-            if (jumpKeyPressed && !jumpKeyWasPressed && !isJumping && !isBlocking) {
+            if (jumpKeyPressed && !jumpKeyWasPressed && prev.y === 0 && !isBlocking) {
               newVelocityY = GAME_CONFIG.JUMP_FORCE;
               isJumping = true;
             }
 
             // Apply gravity and vertical movement
             let newY = prev.y;
-            if (isJumping || newY > 0) {
+            
+            // Apply gravity when in air
+            if (prev.y > 0 || newVelocityY > 0) {
+              newY = prev.y + newVelocityY;
               newVelocityY -= GAME_CONFIG.GRAVITY;
-              newY += newVelocityY;
-              if (newY <= 0) {
-                newY = 0;
-                newVelocityY = 0;
-                isJumping = false;
-              }
+              isJumping = true;
+            }
+            
+            // Landing on ground
+            if (newY <= 0 && prev.y > 0) {
+              newY = 0;
+              newVelocityY = 0;
+              isJumping = false;
+            } else if (newY < 0) {
+              newY = 0;
+              newVelocityY = 0;
+              isJumping = false;
             }
 
             let newX = prev.x + newVelocityX;

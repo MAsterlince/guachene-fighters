@@ -51,16 +51,8 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
   const currentSprite = getCurrentSprite();
   const frameStyle = getFrameStyle();
 
+  // No visual filters - show sprites as they are
   const getFilter = () => {
-    if (fighter.state === 'blocking') {
-      return 'brightness(0.85) drop-shadow(0 0 10px rgba(0, 255, 255, 0.6))';
-    }
-    if (fighter.state === 'hit') {
-      return 'brightness(1.8) saturate(0.3) drop-shadow(0 0 15px rgba(255, 0, 0, 0.8))';
-    }
-    if (fighter.state === 'defeated') {
-      return 'grayscale(0.5) brightness(0.7)';
-    }
     return 'none';
   };
 
@@ -106,37 +98,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
         />
       </div>
       
-      {/* Blocking shield effect */}
-      {fighter.isBlocking && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div 
-            className="w-40 h-56 rounded-full"
-            style={{
-              background: 'radial-gradient(ellipse at center, rgba(0, 255, 255, 0.15) 0%, transparent 70%)',
-              border: '3px solid rgba(0, 255, 255, 0.5)',
-              boxShadow: '0 0 30px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.1)',
-              animation: 'pulse 0.8s ease-in-out infinite',
-            }}
-          />
-        </div>
-      )}
-      
-      {/* Player indicator */}
-      <div 
-        className={`absolute -top-8 left-1/2 px-2 py-1 rounded text-[8px] font-pixel uppercase tracking-wide ${
-          isPlayer2 
-            ? 'bg-gradient-to-r from-fire-red to-fire-orange' 
-            : 'bg-gradient-to-r from-neon-blue to-neon-cyan'
-        }`}
-        style={{ 
-          transform: `scaleX(${fighter.facingRight ? 1 : -1}) translateX(-50%)`,
-          boxShadow: isPlayer2 
-            ? '0 0 10px rgba(255, 100, 50, 0.7)' 
-            : '0 0 10px rgba(0, 200, 255, 0.7)',
-        }}
-      >
-        {isPlayer2 ? 'P2' : 'P1'}
-      </div>
+      {/* No blocking shield effect or player indicators */}
     </div>
   );
 }
