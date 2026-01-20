@@ -17,7 +17,7 @@ interface FightScreenProps {
 
 const ARENA_WIDTH = 1200;
 const ARENA_HEIGHT = 600;
-const PARALLAX_AMOUNT = 100; // How much the background moves
+const PARALLAX_AMOUNT = 100;
 
 const createFighter = (character: Character, isPlayer2: boolean): FighterType => ({
   id: character.id,
@@ -54,6 +54,7 @@ export function FightScreen({
   const [damageNumbers, setDamageNumbers] = useState<Array<{ id: number; x: number; y: number; damage: number }>>([]);
   
   const keysPressed = useRef<Set<string>>(new Set());
+  const prevKeysPressed = useRef<Set<string>>(new Set()); // Track previous frame keys for edge detection
   const gameLoopRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
   const attackCooldown = useRef<{ p1: number; p2: number }>({ p1: 0, p2: 0 });
@@ -66,7 +67,7 @@ export function FightScreen({
   // Calculate parallax offset based on fighters' average position
   const parallaxOffset = useMemo(() => {
     const centerX = (fighter1.x + fighter2.x) / 2;
-    const normalizedPosition = (centerX / ARENA_WIDTH) * 2 - 1; // -1 to 1
+    const normalizedPosition = (centerX / ARENA_WIDTH) * 2 - 1;
     return -normalizedPosition * PARALLAX_AMOUNT;
   }, [fighter1.x, fighter2.x]);
 
@@ -78,11 +79,15 @@ export function FightScreen({
     }, 800);
   }, []);
 
-  const checkCollision = useCallback((attacker: FighterType, defender: FighterType): boolean => {
+  // Hitbox check with different ranges for light vs heavy attacks
+  const checkCollision = useCallback((attacker: FighterType, defender: FighterType, attackType: 'light' | 'heavy'): boolean => {
     const attackerCenter = attacker.x + 100;
     const defenderCenter = defender.x + 100;
     const distance = Math.abs(attackerCenter - defenderCenter);
-    return distance < GAME_CONFIG.ATTACK_RANGE;
+    
+    // Heavy attacks have longer range
+    const range = attackType === 'heavy' ? GAME_CONFIG.HEAVY_ATTACK_RANGE : GAME_CONFIG.LIGHT_ATTACK_RANGE;
+    return distance < range;
   }, []);
 
   const handleAttack = useCallback((
@@ -115,8 +120,8 @@ export function FightScreen({
       }));
     }, attackDuration);
 
-    // Check hit
-    if (checkCollision(attacker, defender)) {
+    // Check hit with attack-type-specific range
+    if (checkCollision(attacker, defender, attackType)) {
       const baseDamage = attackType === 'heavy' ? GAME_CONFIG.HEAVY_DAMAGE : GAME_CONFIG.LIGHT_DAMAGE;
       const damage = defender.isBlocking 
         ? Math.floor(baseDamage * GAME_CONFIG.BLOCK_REDUCTION) 
@@ -133,18 +138,19 @@ export function FightScreen({
 
       addDamageNumber(defender.x + 100, 150, damage);
 
+      // Hit stun duration - let animation play fully (1 second)
       if (!defender.isBlocking) {
         setTimeout(() => {
           setDefender(prev => ({
             ...prev,
             state: prev.health > 0 ? 'idle' : 'defeated',
           }));
-        }, 150);
+        }, 1000); // Match hit animation duration
       }
     }
   }, [checkCollision, addDamageNumber]);
 
-  // Game loop
+  // Game loop with smooth physics
   useEffect(() => {
     if (isPaused || winner) return;
 
@@ -159,34 +165,63 @@ export function FightScreen({
         if (attackCooldown.current.p1 > 0) attackCooldown.current.p1--;
         if (attackCooldown.current.p2 > 0) attackCooldown.current.p2--;
 
-        // Update Fighter 1
+        // Update Fighter 1 with smooth physics
         setFighter1(prev => {
           if (prev.state === 'defeated') return prev;
           
-          let newX = prev.x;
-          let newY = prev.y;
+          let newVelocityX = prev.velocityX;
           let newVelocityY = prev.velocityY;
           let isJumping = prev.isJumping;
           let isBlocking = keysPressed.current.has(PLAYER1_CONTROLS.down);
           let facingRight = prev.facingRight;
 
-          // Movement
-          if (keysPressed.current.has(PLAYER1_CONTROLS.left) && !isBlocking) {
-            newX -= GAME_CONFIG.MOVE_SPEED;
-            facingRight = false;
-          }
-          if (keysPressed.current.has(PLAYER1_CONTROLS.right) && !isBlocking) {
-            newX += GAME_CONFIG.MOVE_SPEED;
-            facingRight = true;
+          // Smooth horizontal movement with acceleration/deceleration
+          const targetVelocityX = (() => {
+            if (isBlocking) return 0;
+            if (keysPressed.current.has(PLAYER1_CONTROLS.left) && keysPressed.current.has(PLAYER1_CONTROLS.right)) return 0;
+            if (keysPressed.current.has(PLAYER1_CONTROLS.left)) return -GAME_CONFIG.MOVE_SPEED;
+            if (keysPressed.current.has(PLAYER1_CONTROLS.right)) return GAME_CONFIG.MOVE_SPEED;
+            return 0;
+          })();
+
+          // Smooth acceleration towards target velocity
+          const acceleration = 1.5;
+          const deceleration = 1.2;
+          
+          if (targetVelocityX !== 0) {
+            // Accelerate towards target
+            if (Math.abs(newVelocityX) < Math.abs(targetVelocityX)) {
+              newVelocityX += Math.sign(targetVelocityX) * acceleration;
+              if (Math.abs(newVelocityX) > Math.abs(targetVelocityX)) {
+                newVelocityX = targetVelocityX;
+              }
+            } else {
+              newVelocityX = targetVelocityX;
+            }
+          } else {
+            // Decelerate to stop
+            if (Math.abs(newVelocityX) > 0.5) {
+              newVelocityX -= Math.sign(newVelocityX) * deceleration;
+            } else {
+              newVelocityX = 0;
+            }
           }
 
-          // Jump
-          if (keysPressed.current.has(PLAYER1_CONTROLS.up) && !isJumping && !isBlocking) {
+          // Update facing direction based on movement
+          if (newVelocityX < -0.5) facingRight = false;
+          else if (newVelocityX > 0.5) facingRight = true;
+
+          // Jump - only trigger on key press (edge detection), not held
+          const jumpKeyPressed = keysPressed.current.has(PLAYER1_CONTROLS.up);
+          const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER1_CONTROLS.up);
+          
+          if (jumpKeyPressed && !jumpKeyWasPressed && !isJumping && !isBlocking) {
             newVelocityY = GAME_CONFIG.JUMP_FORCE;
             isJumping = true;
           }
 
           // Gravity and vertical movement
+          let newY = prev.y;
           if (isJumping) {
             newY += newVelocityY;
             newVelocityY -= GAME_CONFIG.GRAVITY;
@@ -198,24 +233,28 @@ export function FightScreen({
             }
           }
 
+          // Apply horizontal velocity
+          let newX = prev.x + newVelocityX;
+
           // Boundaries
           newX = Math.max(0, Math.min(ARENA_WIDTH - 200, newX));
 
           const state = prev.isAttacking ? 'attacking' 
             : isBlocking ? 'blocking'
             : isJumping ? 'jumping'
-            : (keysPressed.current.has(PLAYER1_CONTROLS.left) || keysPressed.current.has(PLAYER1_CONTROLS.right)) ? 'walking'
+            : Math.abs(newVelocityX) > 0.5 ? 'walking'
             : 'idle';
 
           return {
             ...prev,
             x: newX,
             y: newY,
+            velocityX: newVelocityX,
             velocityY: newVelocityY,
             isJumping,
             isBlocking,
             facingRight,
-            state: prev.isAttacking ? prev.state : state,
+            state: prev.isAttacking ? prev.state : (prev.state === 'hit' ? 'hit' : state),
           };
         });
 
@@ -236,34 +275,53 @@ export function FightScreen({
           setFighter2(prev => {
             if (prev.state === 'defeated') return prev;
             
-            let newX = prev.x;
-            let newY = prev.y;
+            let newVelocityX = prev.velocityX;
             let newVelocityY = prev.velocityY;
+            let newY = prev.y;
             let isJumping = prev.isJumping;
             let facingRight = prev.facingRight;
 
             const distanceToPlayer = prev.x - fighter1.x;
             facingRight = distanceToPlayer > 0 ? false : true;
 
+            // CPU target velocity based on action
+            let targetVelocityX = 0;
+            
             switch (cpuAction.current) {
               case 'approach':
-                if (Math.abs(distanceToPlayer) > GAME_CONFIG.ATTACK_RANGE) {
-                  newX += distanceToPlayer > 0 ? -GAME_CONFIG.MOVE_SPEED * 0.7 : GAME_CONFIG.MOVE_SPEED * 0.7;
+                if (Math.abs(distanceToPlayer) > GAME_CONFIG.LIGHT_ATTACK_RANGE) {
+                  targetVelocityX = distanceToPlayer > 0 ? -GAME_CONFIG.MOVE_SPEED * 0.7 : GAME_CONFIG.MOVE_SPEED * 0.7;
                 }
                 break;
               case 'retreat':
-                newX += distanceToPlayer > 0 ? GAME_CONFIG.MOVE_SPEED * 0.5 : -GAME_CONFIG.MOVE_SPEED * 0.5;
+                targetVelocityX = distanceToPlayer > 0 ? GAME_CONFIG.MOVE_SPEED * 0.5 : -GAME_CONFIG.MOVE_SPEED * 0.5;
                 break;
               case 'attack':
-                if (Math.abs(distanceToPlayer) < GAME_CONFIG.ATTACK_RANGE + 50) {
+                if (Math.abs(distanceToPlayer) < GAME_CONFIG.HEAVY_ATTACK_RANGE + 50) {
                   if (!prev.isAttacking && attackCooldown.current.p2 === 0) {
                     const attackType = Math.random() > 0.6 ? 'heavy' : 'light';
                     handleAttack(prev, fighter1, setFighter2, setFighter1, attackType, 2);
                   }
                 } else {
-                  newX += distanceToPlayer > 0 ? -GAME_CONFIG.MOVE_SPEED : GAME_CONFIG.MOVE_SPEED;
+                  targetVelocityX = distanceToPlayer > 0 ? -GAME_CONFIG.MOVE_SPEED : GAME_CONFIG.MOVE_SPEED;
                 }
                 break;
+            }
+
+            // Smooth CPU movement
+            const acceleration = 1.2;
+            if (targetVelocityX !== 0) {
+              if (Math.abs(newVelocityX) < Math.abs(targetVelocityX)) {
+                newVelocityX += Math.sign(targetVelocityX) * acceleration;
+              } else {
+                newVelocityX = targetVelocityX;
+              }
+            } else {
+              if (Math.abs(newVelocityX) > 0.5) {
+                newVelocityX -= Math.sign(newVelocityX) * acceleration;
+              } else {
+                newVelocityX = 0;
+              }
             }
 
             // Random jump
@@ -272,7 +330,7 @@ export function FightScreen({
               isJumping = true;
             }
 
-            // Gravity and vertical movement
+            // Gravity
             if (isJumping) {
               newY += newVelocityY;
               newVelocityY -= GAME_CONFIG.GRAVITY;
@@ -283,73 +341,113 @@ export function FightScreen({
               }
             }
 
+            let newX = prev.x + newVelocityX;
             newX = Math.max(0, Math.min(ARENA_WIDTH - 200, newX));
 
-            return {
-              ...prev,
-              x: newX,
-              y: newY,
-              velocityY: newVelocityY,
-              isJumping,
-              facingRight,
-            };
-          });
-        } else {
-          // Player 2 controls
-          setFighter2(prev => {
-            if (prev.state === 'defeated') return prev;
-            
-            let newX = prev.x;
-            let newY = prev.y;
-            let newVelocityY = prev.velocityY;
-            let isJumping = prev.isJumping;
-            let isBlocking = keysPressed.current.has(PLAYER2_CONTROLS.down);
-            let facingRight = prev.facingRight;
-
-            if (keysPressed.current.has(PLAYER2_CONTROLS.left) && !isBlocking) {
-              newX -= GAME_CONFIG.MOVE_SPEED;
-              facingRight = false;
-            }
-            if (keysPressed.current.has(PLAYER2_CONTROLS.right) && !isBlocking) {
-              newX += GAME_CONFIG.MOVE_SPEED;
-              facingRight = true;
-            }
-
-            if (keysPressed.current.has(PLAYER2_CONTROLS.up) && !isJumping && !isBlocking) {
-              newVelocityY = GAME_CONFIG.JUMP_FORCE;
-              isJumping = true;
-            }
-
-            if (isJumping) {
-              newY += newVelocityY;
-              newVelocityY -= GAME_CONFIG.GRAVITY;
-              if (newY <= 0) {
-                newY = 0;
-                newVelocityY = 0;
-                isJumping = false;
-              }
-            }
-
-            newX = Math.max(0, Math.min(ARENA_WIDTH - 200, newX));
-
-            const state = prev.isAttacking ? 'attacking' 
-              : isBlocking ? 'blocking'
+            const state = prev.isAttacking ? 'attacking'
               : isJumping ? 'jumping'
-              : (keysPressed.current.has(PLAYER2_CONTROLS.left) || keysPressed.current.has(PLAYER2_CONTROLS.right)) ? 'walking'
+              : Math.abs(newVelocityX) > 0.5 ? 'walking'
               : 'idle';
 
             return {
               ...prev,
               x: newX,
               y: newY,
+              velocityX: newVelocityX,
+              velocityY: newVelocityY,
+              isJumping,
+              facingRight,
+              state: prev.isAttacking ? prev.state : (prev.state === 'hit' ? 'hit' : state),
+            };
+          });
+        } else {
+          // Player 2 controls with smooth physics
+          setFighter2(prev => {
+            if (prev.state === 'defeated') return prev;
+            
+            let newVelocityX = prev.velocityX;
+            let newVelocityY = prev.velocityY;
+            let isJumping = prev.isJumping;
+            let isBlocking = keysPressed.current.has(PLAYER2_CONTROLS.down);
+            let facingRight = prev.facingRight;
+
+            // Smooth horizontal movement
+            const targetVelocityX = (() => {
+              if (isBlocking) return 0;
+              if (keysPressed.current.has(PLAYER2_CONTROLS.left) && keysPressed.current.has(PLAYER2_CONTROLS.right)) return 0;
+              if (keysPressed.current.has(PLAYER2_CONTROLS.left)) return -GAME_CONFIG.MOVE_SPEED;
+              if (keysPressed.current.has(PLAYER2_CONTROLS.right)) return GAME_CONFIG.MOVE_SPEED;
+              return 0;
+            })();
+
+            const acceleration = 1.5;
+            const deceleration = 1.2;
+            
+            if (targetVelocityX !== 0) {
+              if (Math.abs(newVelocityX) < Math.abs(targetVelocityX)) {
+                newVelocityX += Math.sign(targetVelocityX) * acceleration;
+                if (Math.abs(newVelocityX) > Math.abs(targetVelocityX)) {
+                  newVelocityX = targetVelocityX;
+                }
+              } else {
+                newVelocityX = targetVelocityX;
+              }
+            } else {
+              if (Math.abs(newVelocityX) > 0.5) {
+                newVelocityX -= Math.sign(newVelocityX) * deceleration;
+              } else {
+                newVelocityX = 0;
+              }
+            }
+
+            if (newVelocityX < -0.5) facingRight = false;
+            else if (newVelocityX > 0.5) facingRight = true;
+
+            // Jump edge detection
+            const jumpKeyPressed = keysPressed.current.has(PLAYER2_CONTROLS.up);
+            const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER2_CONTROLS.up);
+            
+            if (jumpKeyPressed && !jumpKeyWasPressed && !isJumping && !isBlocking) {
+              newVelocityY = GAME_CONFIG.JUMP_FORCE;
+              isJumping = true;
+            }
+
+            let newY = prev.y;
+            if (isJumping) {
+              newY += newVelocityY;
+              newVelocityY -= GAME_CONFIG.GRAVITY;
+              if (newY <= 0) {
+                newY = 0;
+                newVelocityY = 0;
+                isJumping = false;
+              }
+            }
+
+            let newX = prev.x + newVelocityX;
+            newX = Math.max(0, Math.min(ARENA_WIDTH - 200, newX));
+
+            const state = prev.isAttacking ? 'attacking' 
+              : isBlocking ? 'blocking'
+              : isJumping ? 'jumping'
+              : Math.abs(newVelocityX) > 0.5 ? 'walking'
+              : 'idle';
+
+            return {
+              ...prev,
+              x: newX,
+              y: newY,
+              velocityX: newVelocityX,
               velocityY: newVelocityY,
               isJumping,
               isBlocking,
               facingRight,
-              state: prev.isAttacking ? prev.state : state,
+              state: prev.isAttacking ? prev.state : (prev.state === 'hit' ? 'hit' : state),
             };
           });
         }
+
+        // Update previous keys for next frame edge detection
+        prevKeysPressed.current = new Set(keysPressed.current);
       }
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -367,18 +465,16 @@ export function FightScreen({
       setWinner(2);
       setFighter1(prev => ({ ...prev, state: 'defeated' }));
       setFighter2(prev => ({ ...prev, state: 'victory' }));
-      // Delay showing victory screen by 3 seconds
       setTimeout(() => setShowVictoryScreen(true), 3000);
     } else if (fighter2.health <= 0 && !winner) {
       setWinner(1);
       setFighter2(prev => ({ ...prev, state: 'defeated' }));
       setFighter1(prev => ({ ...prev, state: 'victory' }));
-      // Delay showing victory screen by 3 seconds
       setTimeout(() => setShowVictoryScreen(true), 3000);
     }
   }, [fighter1.health, fighter2.health, winner]);
 
-  // Timer - also add delay for time-based winner
+  // Timer
   useEffect(() => {
     if (isPaused || winner) return;
     
@@ -498,79 +594,51 @@ export function FightScreen({
           {/* Timer */}
           <div className="flex flex-col items-center">
             <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center"
-              style={{ 
-                background: 'linear-gradient(180deg, #444 0%, #222 100%)',
+              className="text-5xl font-bold text-white px-4 py-2 rounded-lg min-w-[80px] text-center"
+              style={{
+                background: 'linear-gradient(180deg, #333 0%, #111 100%)',
                 border: '3px solid #666',
-                boxShadow: '0 4px 0 #111, 0 0 20px rgba(255, 165, 0, 0.3)',
+                textShadow: '0 0 10px rgba(255,255,255,0.5)',
               }}
             >
-              <span 
-                className="text-2xl font-pixel"
-                style={{
-                  color: roundTime <= 10 ? '#FF4444' : '#FFFF00',
-                  textShadow: '2px 2px 0 #000',
-                }}
-              >
-                {roundTime}
-              </span>
+              {roundTime}
             </div>
-            <button 
-              onClick={() => setIsPaused(true)}
-              className="mt-2 text-[8px] font-pixel text-white/60 hover:text-white/90 transition-colors"
-            >
-              ESC = PAUSA
-            </button>
           </div>
 
           {/* Player 2 health */}
           <HealthBar 
             health={fighter2.health} 
             maxHealth={fighter2.maxHealth} 
-            playerName={mode === 'cpu' ? `${fighter2.name} (CPU)` : fighter2.name}
+            playerName={fighter2.name}
             isPlayer2
           />
         </div>
       </div>
 
-      {/* Fight arena - positioned at bottom */}
-      <div 
-        className="absolute bottom-0 left-0 right-0"
-        style={{ height: ARENA_HEIGHT }}
-      >
-        {/* Fighters */}
-        <AnimatedFighter fighter={fighter1} />
-        <AnimatedFighter fighter={fighter2} isPlayer2 />
-
-        {/* Damage numbers */}
-        {damageNumbers.map(({ id, x, y, damage }) => (
-          <div
-            key={id}
-            className="absolute font-pixel text-2xl animate-damage-number"
-            style={{ 
-              left: x, 
-              top: y,
-              color: '#FF4444',
-              textShadow: '2px 2px 0 #000, 0 0 10px rgba(255, 0, 0, 0.8)',
-            }}
-          >
-            -{damage}
-          </div>
-        ))}
+      {/* Fighters Layer */}
+      <div className="absolute inset-0" style={{ zIndex: 10 }}>
+        <AnimatedFighter fighter={fighter1} isPlayer2={false} />
+        <AnimatedFighter fighter={fighter2} isPlayer2={true} />
       </div>
 
-      {/* Map name */}
-      <div className="absolute bottom-2 left-4">
-        <span 
-          className="text-[10px] font-pixel"
-          style={{ color: 'rgba(255,255,255,0.4)' }}
+      {/* Damage Numbers */}
+      {damageNumbers.map(({ id, x, y, damage }) => (
+        <div
+          key={id}
+          className="absolute text-3xl font-bold text-red-500 pointer-events-none animate-bounce"
+          style={{
+            left: `${(x / ARENA_WIDTH) * 100}%`,
+            top: `${30 + (y / ARENA_HEIGHT) * 30}%`,
+            textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+            animation: 'fadeUp 0.8s ease-out forwards',
+          }}
         >
-          {selectedMap.name}
-        </span>
-      </div>
+          -{damage}
+        </div>
+      ))}
 
-      {/* Pause menu */}
-      {isPaused && (
+      {/* Pause Menu */}
+      {isPaused && !winner && (
         <PauseMenu
           onResume={() => setIsPaused(false)}
           onCharacterSelect={onCharacterSelect}
@@ -578,7 +646,7 @@ export function FightScreen({
         />
       )}
 
-      {/* Victory screen - only shown after delay */}
+      {/* Victory Screen */}
       {showVictoryScreen && winner && (
         <VictoryScreen
           winner={winner === 1 ? player1Character : player2Character}
@@ -588,6 +656,13 @@ export function FightScreen({
           onMainMenu={onMainMenu}
         />
       )}
+
+      <style>{`
+        @keyframes fadeUp {
+          0% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-50px); }
+        }
+      `}</style>
     </div>
   );
 }
