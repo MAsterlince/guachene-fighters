@@ -73,7 +73,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
       className="fighter absolute"
       style={{
         left: `${fighter.x}px`,
-        bottom: `${fighter.y}px`,
+        bottom: `${fighter.y + 50}px`, // Raise fighter up from floor
         width: `${displayWidth}px`,
         height: `${displayHeight}px`,
         transformOrigin: 'bottom center',
@@ -105,31 +105,6 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
           }}
         />
       </div>
-      
-      {/* Attack effect */}
-      {fighter.isAttacking && (
-        <div 
-          className={`absolute ${fighter.facingRight ? 'right-0 translate-x-3/4' : 'left-0 -translate-x-3/4'} top-1/3`}
-          style={{
-            width: fighter.attackType === 'heavy' ? 80 : 50,
-            height: fighter.attackType === 'heavy' ? 80 : 50,
-          }}
-        >
-          <div 
-            className={`w-full h-full rounded-full ${
-              fighter.attackType === 'heavy' 
-                ? 'bg-gradient-radial from-white/80 via-fire-yellow/60 to-fire-red/40' 
-                : 'bg-gradient-radial from-white/60 via-fire-yellow/50 to-transparent'
-            }`}
-            style={{
-              animation: 'attack-flash 0.15s ease-out',
-              boxShadow: fighter.attackType === 'heavy'
-                ? '0 0 40px rgba(255, 100, 50, 0.9), 0 0 80px rgba(255, 50, 0, 0.6)'
-                : '0 0 25px rgba(255, 200, 50, 0.8)',
-            }}
-          />
-        </div>
-      )}
       
       {/* Blocking shield effect */}
       {fighter.isBlocking && (
