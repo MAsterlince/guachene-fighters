@@ -10,9 +10,9 @@ interface RowBasedSpriteConfig {
 }
 
 // Andres unified spritesheet configuration
-// Based on user's description:
+// 7 columns x 9 rows, each cell 277px x 277px
 // Row 0: idle (1 frame)
-// Row 1: walk (4 frames)
+// Row 1: walk (5 frames)
 // Row 2: jump (3 frames)
 // Row 3: lightAttack (1 frame)
 // Row 4: heavyAttack (5 frames)
@@ -21,19 +21,19 @@ interface RowBasedSpriteConfig {
 // Row 7: victory (5 frames)
 // Row 8: defeat (3 frames)
 const TOTAL_ROWS = 9;
-const MAX_COLS = 5; // Maximum number of frames in any row
+const MAX_COLS = 7; // Spritesheet has 7 columns
 
 export const SPRITE_CONFIGS: Record<string, Record<string, RowBasedSpriteConfig>> = {
   andres: {
-    idle: { row: 0, cols: 1, frameDuration: 500, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    walk: { row: 1, cols: 4, frameDuration: 120, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    jump: { row: 2, cols: 3, frameDuration: 100, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    lightAttack: { row: 3, cols: 1, frameDuration: 100, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    heavyAttack: { row: 4, cols: 5, frameDuration: 80, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    block: { row: 5, cols: 1, frameDuration: 200, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    hit: { row: 6, cols: 2, frameDuration: 100, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    victory: { row: 7, cols: 5, frameDuration: 180, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    defeat: { row: 8, cols: 3, frameDuration: 200, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    idle: { row: 0, cols: 1, frameDuration: 600, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    walk: { row: 1, cols: 5, frameDuration: 180, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    jump: { row: 2, cols: 3, frameDuration: 180, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    lightAttack: { row: 3, cols: 1, frameDuration: 200, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    heavyAttack: { row: 4, cols: 5, frameDuration: 140, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    block: { row: 5, cols: 1, frameDuration: 300, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    hit: { row: 6, cols: 2, frameDuration: 180, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    victory: { row: 7, cols: 5, frameDuration: 250, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    defeat: { row: 8, cols: 3, frameDuration: 280, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
   },
   // Other characters use single images for now
   camilo: {},
