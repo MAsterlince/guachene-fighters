@@ -103,8 +103,9 @@ export function FightScreen({
       state: 'attacking',
     }));
 
-    attackCooldown.current[cooldownKey] = attackType === 'heavy' ? 40 : 25;
+    attackCooldown.current[cooldownKey] = attackType === 'heavy' ? 60 : 30;
 
+    const attackDuration = attackType === 'heavy' ? 500 : 250;
     setTimeout(() => {
       setAttacker(prev => ({
         ...prev,
@@ -112,7 +113,7 @@ export function FightScreen({
         attackType: 'none',
         state: prev.health > 0 ? 'idle' : 'defeated',
       }));
-    }, attackType === 'heavy' ? 300 : 200);
+    }, attackDuration);
 
     // Check hit
     if (checkCollision(attacker, defender)) {
@@ -185,10 +186,10 @@ export function FightScreen({
             isJumping = true;
           }
 
-          // Gravity
+          // Gravity and vertical movement
           if (isJumping) {
-            newVelocityY += GAME_CONFIG.GRAVITY;
-            newY -= newVelocityY;
+            newY += newVelocityY;
+            newVelocityY -= GAME_CONFIG.GRAVITY;
             
             if (newY <= 0) {
               newY = 0;
@@ -271,10 +272,10 @@ export function FightScreen({
               isJumping = true;
             }
 
-            // Gravity
+            // Gravity and vertical movement
             if (isJumping) {
-              newVelocityY += GAME_CONFIG.GRAVITY;
-              newY -= newVelocityY;
+              newY += newVelocityY;
+              newVelocityY -= GAME_CONFIG.GRAVITY;
               if (newY <= 0) {
                 newY = 0;
                 newVelocityY = 0;
@@ -320,8 +321,8 @@ export function FightScreen({
             }
 
             if (isJumping) {
-              newVelocityY += GAME_CONFIG.GRAVITY;
-              newY -= newVelocityY;
+              newY += newVelocityY;
+              newVelocityY -= GAME_CONFIG.GRAVITY;
               if (newY <= 0) {
                 newY = 0;
                 newVelocityY = 0;

@@ -60,9 +60,9 @@ export const GAME_CONFIG = {
   GROUND_Y: 380,
   FIGHTER_WIDTH: 120,
   FIGHTER_HEIGHT: 200,
-  GRAVITY: 0.5,
-  JUMP_FORCE: -12,
-  MOVE_SPEED: 4.5, // Smooth floating point movement
+  GRAVITY: 0.6,
+  JUMP_FORCE: 14, // Positive value - we'll subtract in physics
+  MOVE_SPEED: 5,
   LIGHT_DAMAGE: 8,
   HEAVY_DAMAGE: 15,
   ATTACK_RANGE: 100,
