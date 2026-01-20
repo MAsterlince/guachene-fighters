@@ -9,7 +9,7 @@ interface AnimatedFighterProps {
 }
 
 // Visual scale factor for displaying the fighter
-const DISPLAY_SCALE = 0.72; // 277 * 0.72 ≈ 200px
+const DISPLAY_SCALE = 1.0; // Full size for visibility
 
 export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterProps) {
   const characterId = fighter.character.id;
@@ -73,7 +73,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
       className="fighter absolute"
       style={{
         left: `${fighter.x}px`,
-        bottom: `${fighter.y + 50}px`, // Raise fighter up from floor
+        bottom: `${fighter.y + 100}px`, // Raise fighter properly above floor
         width: `${displayWidth}px`,
         height: `${displayHeight}px`,
         transformOrigin: 'bottom center',
