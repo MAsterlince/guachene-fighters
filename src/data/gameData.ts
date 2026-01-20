@@ -61,11 +61,12 @@ export const GAME_CONFIG = {
   FIGHTER_WIDTH: 120,
   FIGHTER_HEIGHT: 200,
   GRAVITY: 0.8,
-  JUMP_FORCE: 20,
+  JUMP_FORCE: 18, // Slightly higher jump
   MOVE_SPEED: 8, // Fast and fluid movement
   LIGHT_DAMAGE: 8,
   HEAVY_DAMAGE: 15,
-  ATTACK_RANGE: 100,
+  LIGHT_ATTACK_RANGE: 120, // Short range for light attacks
+  HEAVY_ATTACK_RANGE: 180, // Extended range for heavy attacks
   BLOCK_REDUCTION: 0.3,
   MAX_HEALTH: 100,
   ROUND_TIME: 99,
