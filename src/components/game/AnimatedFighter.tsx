@@ -1,18 +1,21 @@
 import React from 'react';
 import { Fighter as FighterType } from '@/types/game';
 import { CHARACTER_SPRITES } from '@/data/characterSprites';
-import { useSpriteAnimation, SPRITE_CONFIGS } from '@/hooks/useSpriteAnimation';
+import { useSpriteAnimation, SPRITE_DIMENSIONS } from '@/hooks/useSpriteAnimation';
 
 interface AnimatedFighterProps {
   fighter: FighterType;
   isPlayer2?: boolean;
 }
 
+// Visual scale factor for displaying the fighter
+const DISPLAY_SCALE = 0.72; // 277 * 0.72 ≈ 200px
+
 export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterProps) {
   const characterId = fighter.character.id;
   const sprites = CHARACTER_SPRITES[characterId];
   
-  const { hasAnimation, spriteKey, getFrameStyle } = useSpriteAnimation({
+  const { hasAnimation, getFrameStyle } = useSpriteAnimation({
     characterId,
     state: fighter.state,
     attackType: fighter.attackType === 'none' ? undefined : fighter.attackType,
@@ -46,14 +49,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
   };
 
   const currentSprite = getCurrentSprite();
-  const config = SPRITE_CONFIGS[characterId]?.[spriteKey];
   const frameStyle = getFrameStyle();
-
-  const getTransform = () => {
-    const scaleX = fighter.facingRight ? 1 : -1;
-    const translateY = fighter.isJumping ? -fighter.y : 0;
-    return `scaleX(${scaleX}) translateY(${translateY}px)`;
-  };
 
   const getFilter = () => {
     if (fighter.state === 'blocking') {
@@ -68,35 +64,47 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
     return 'none';
   };
 
+  // Fighter visual dimensions
+  const displayWidth = SPRITE_DIMENSIONS.cellWidth * DISPLAY_SCALE;
+  const displayHeight = SPRITE_DIMENSIONS.cellHeight * DISPLAY_SCALE;
+
   return (
     <div
-      className="fighter"
+      className="fighter absolute"
       style={{
-        left: fighter.x,
-        bottom: 0,
-        width: 200,
-        height: 300,
-        transform: getTransform(),
+        left: `${fighter.x}px`,
+        bottom: `${fighter.y}px`,
+        width: `${displayWidth}px`,
+        height: `${displayHeight}px`,
         transformOrigin: 'bottom center',
+        transform: fighter.facingRight ? 'scaleX(1)' : 'scaleX(-1)',
       }}
     >
-      {/* Fighter sprite with frame extraction */}
+      {/* Sprite container with exact cell dimensions, then scaled down */}
       <div
-        className="w-full h-full"
+        className="origin-bottom-left"
         style={{
-          backgroundImage: `url(${currentSprite})`,
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: hasAnimation && config 
-            ? `${config.maxCols * 100}% ${config.totalRows * 100}%`
-            : 'contain',
-          backgroundPosition: hasAnimation && config
-            ? frameStyle.backgroundPosition
-            : 'center bottom',
-          imageRendering: 'auto',
-          filter: getFilter(),
-          transition: 'filter 0.1s',
+          width: `${SPRITE_DIMENSIONS.cellWidth}px`,
+          height: `${SPRITE_DIMENSIONS.cellHeight}px`,
+          transform: `scale(${DISPLAY_SCALE})`,
+          overflow: 'hidden',
         }}
-      />
+      >
+        {/* Actual sprite with pixel-perfect positioning */}
+        <div
+          style={{
+            width: `${SPRITE_DIMENSIONS.cellWidth}px`,
+            height: `${SPRITE_DIMENSIONS.cellHeight}px`,
+            backgroundImage: `url(${currentSprite})`,
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: hasAnimation ? frameStyle.backgroundSize : 'contain',
+            backgroundPosition: hasAnimation ? frameStyle.backgroundPosition : 'center bottom',
+            imageRendering: 'auto',
+            filter: getFilter(),
+            transition: 'filter 0.1s',
+          }}
+        />
+      </div>
       
       {/* Attack effect */}
       {fighter.isAttacking && (

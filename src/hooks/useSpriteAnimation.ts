@@ -1,16 +1,23 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
+// Sprite cell dimensions in pixels
+const CELL_WIDTH = 277;
+const CELL_HEIGHT = 277;
+const TOTAL_ROWS = 9;
+const MAX_COLS = 7;
+
+// Total spritesheet dimensions
+const SHEET_WIDTH = CELL_WIDTH * MAX_COLS;  // 1939px
+const SHEET_HEIGHT = CELL_HEIGHT * TOTAL_ROWS; // 2493px
+
 interface RowBasedSpriteConfig {
-  row: number;          // Which row in the spritesheet
-  cols: number;         // Number of frames in this row
+  row: number;
+  cols: number;
   frameDuration: number;
   loop: boolean;
-  maxCols: number;      // Total columns in the spritesheet grid
-  totalRows: number;    // Total rows in the spritesheet
 }
 
 // Andres unified spritesheet configuration
-// 7 columns x 9 rows, each cell 277px x 277px
 // Row 0: idle (1 frame)
 // Row 1: walk (5 frames)
 // Row 2: jump (3 frames)
@@ -20,25 +27,31 @@ interface RowBasedSpriteConfig {
 // Row 6: hit (2 frames)
 // Row 7: victory (5 frames)
 // Row 8: defeat (3 frames)
-const TOTAL_ROWS = 9;
-const MAX_COLS = 7; // Spritesheet has 7 columns
 
 export const SPRITE_CONFIGS: Record<string, Record<string, RowBasedSpriteConfig>> = {
   andres: {
-    idle: { row: 0, cols: 1, frameDuration: 600, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    walk: { row: 1, cols: 5, frameDuration: 180, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    jump: { row: 2, cols: 3, frameDuration: 180, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    lightAttack: { row: 3, cols: 1, frameDuration: 200, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    heavyAttack: { row: 4, cols: 5, frameDuration: 140, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    block: { row: 5, cols: 1, frameDuration: 300, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    hit: { row: 6, cols: 2, frameDuration: 180, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    victory: { row: 7, cols: 5, frameDuration: 250, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
-    defeat: { row: 8, cols: 3, frameDuration: 280, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    idle: { row: 0, cols: 1, frameDuration: 600, loop: true },
+    walk: { row: 1, cols: 5, frameDuration: 150, loop: true },
+    jump: { row: 2, cols: 3, frameDuration: 200, loop: false },
+    lightAttack: { row: 3, cols: 1, frameDuration: 200, loop: false },
+    heavyAttack: { row: 4, cols: 5, frameDuration: 120, loop: false },
+    block: { row: 5, cols: 1, frameDuration: 300, loop: true },
+    hit: { row: 6, cols: 2, frameDuration: 150, loop: false },
+    victory: { row: 7, cols: 5, frameDuration: 200, loop: true },
+    defeat: { row: 8, cols: 3, frameDuration: 250, loop: false },
   },
   // Other characters use single images for now
   camilo: {},
   oliver: {},
   jordan: {},
+};
+
+// Sprite dimensions export for components
+export const SPRITE_DIMENSIONS = {
+  cellWidth: CELL_WIDTH,
+  cellHeight: CELL_HEIGHT,
+  sheetWidth: SHEET_WIDTH,
+  sheetHeight: SHEET_HEIGHT,
 };
 
 const STATE_TO_SPRITE_KEY: Record<string, string> = {
@@ -79,7 +92,7 @@ export function useSpriteAnimation({
   }, [state, attackType]);
 
   const config = SPRITE_CONFIGS[characterId]?.[spriteKey];
-  const hasAnimation = !!config && config.cols > 1;
+  const hasAnimation = !!config;
   const totalFrames = config?.cols || 1;
   const frameDuration = config?.frameDuration || 150;
   const shouldLoop = config?.loop ?? true;
@@ -95,7 +108,7 @@ export function useSpriteAnimation({
 
   // Animate frames
   useEffect(() => {
-    if (!isActive || !hasAnimation) return;
+    if (!isActive || !hasAnimation || totalFrames <= 1) return;
 
     const animate = () => {
       setCurrentFrame(prev => {
@@ -116,26 +129,28 @@ export function useSpriteAnimation({
     };
   }, [isActive, hasAnimation, totalFrames, frameDuration, shouldLoop, state, attackType]);
 
-  // Calculate background position for row-based spritesheet
+  // Calculate background position using ABSOLUTE PIXELS
   const getFrameStyle = useCallback(() => {
     if (!config) {
       return {
         backgroundSize: 'contain',
         backgroundPosition: 'center bottom',
+        width: CELL_WIDTH,
+        height: CELL_HEIGHT,
       };
     }
 
-    const { row, maxCols, totalRows } = config;
+    const { row } = config;
     
-    // Calculate percentage positions
-    // X: move horizontally through frames
-    const xPercent = maxCols > 1 ? (currentFrame / (maxCols - 1)) * 100 : 0;
-    // Y: fixed row position
-    const yPercent = totalRows > 1 ? (row / (totalRows - 1)) * 100 : 0;
+    // Calculate pixel positions (negative values for background-position)
+    const xPos = -(currentFrame * CELL_WIDTH);
+    const yPos = -(row * CELL_HEIGHT);
 
     return {
-      backgroundSize: `${maxCols * 100}% ${totalRows * 100}%`,
-      backgroundPosition: `${xPercent}% ${yPercent}%`,
+      backgroundSize: `${SHEET_WIDTH}px ${SHEET_HEIGHT}px`,
+      backgroundPosition: `${xPos}px ${yPos}px`,
+      width: CELL_WIDTH,
+      height: CELL_HEIGHT,
     };
   }, [currentFrame, config]);
 
@@ -146,5 +161,6 @@ export function useSpriteAnimation({
     spriteKey,
     config,
     getFrameStyle,
+    dimensions: SPRITE_DIMENSIONS,
   };
 }

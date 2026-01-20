@@ -72,7 +72,7 @@ export function FightScreen({
 
   const addDamageNumber = useCallback((x: number, y: number, damage: number) => {
     const id = damageIdRef.current++;
-    setDamageNumbers(prev => [...prev, { id, x, y, damage }]);
+    setDamageNumbers(prev => [...prev, { id, x: Math.round(x), y: Math.round(y), damage }]);
     setTimeout(() => {
       setDamageNumbers(prev => prev.filter(d => d.id !== id));
     }, 800);
