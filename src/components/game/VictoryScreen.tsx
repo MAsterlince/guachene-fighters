@@ -18,14 +18,7 @@ export function VictoryScreen({
 }: VictoryScreenProps) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 animate-fade-in">
-      {/* Winner announcement - top of screen */}
-      <div className="fixed top-8 left-1/2 -translate-x-1/2">
-        <h2 className="text-4xl md:text-5xl font-pixel fire-gradient text-shadow-fire uppercase text-center whitespace-nowrap">
-          ¡{winner.name} Gana!
-        </h2>
-      </div>
-
-      {/* Minimalist bottom menu */}
+      {/* Minimalist bottom menu - no text, just buttons */}
       <div 
         className="p-4 pb-6"
         style={{

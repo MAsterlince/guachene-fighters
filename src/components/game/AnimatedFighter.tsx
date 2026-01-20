@@ -70,6 +70,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
         height: `${displayHeight}px`,
         transformOrigin: 'bottom center',
         transform: fighter.facingRight ? 'scaleX(1)' : 'scaleX(-1)',
+        transition: 'none', // Prevent paper-flip effect when changing direction
       }}
     >
       {/* Sprite container with exact cell dimensions, then scaled down */}
