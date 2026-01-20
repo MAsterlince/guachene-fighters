@@ -36,13 +36,23 @@ export const SPRITE_CONFIGS: Record<string, Record<string, RowBasedSpriteConfig>
     lightAttack: { row: 3, cols: 1, frameDuration: 250, loop: false },
     heavyAttack: { row: 4, cols: 5, frameDuration: 100, loop: false },
     block: { row: 5, cols: 1, frameDuration: 300, loop: true },
-    hit: { row: 6, cols: 2, frameDuration: 300, loop: false },
-    victory: { row: 7, cols: 5, frameDuration: 180, loop: true },
+    hit: { row: 6, cols: 2, frameDuration: 450, loop: false },
+    victory: { row: 7, cols: 5, frameDuration: 350, loop: false },
+    defeat: { row: 8, cols: 3, frameDuration: 300, loop: false },
+  },
+  oliver: {
+    idle: { row: 0, cols: 1, frameDuration: 600, loop: true },
+    walk: { row: 1, cols: 5, frameDuration: 150, loop: true },
+    jump: { row: 2, cols: 3, frameDuration: 200, loop: false },
+    lightAttack: { row: 3, cols: 1, frameDuration: 250, loop: false },
+    heavyAttack: { row: 4, cols: 5, frameDuration: 100, loop: false },
+    block: { row: 5, cols: 1, frameDuration: 300, loop: true },
+    hit: { row: 6, cols: 2, frameDuration: 450, loop: false },
+    victory: { row: 7, cols: 5, frameDuration: 350, loop: false },
     defeat: { row: 8, cols: 3, frameDuration: 300, loop: false },
   },
   // Other characters use single images for now
   camilo: {},
-  oliver: {},
   jordan: {},
 };
 

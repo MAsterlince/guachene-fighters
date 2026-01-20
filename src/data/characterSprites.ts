@@ -2,13 +2,14 @@ import { CharacterSprites } from '@/types/sprites';
 
 // Andres unified spritesheet
 import andresSpritesheet from '@/assets/characters/andres/spritesheet.png';
+// Oliver unified spritesheet
+import oliverSpritesheet from '@/assets/characters/oliver/spritesheet.png';
 
 // Import other character base images for now (placeholders until sprites provided)
 import camiloImg from '@/assets/characters/camilo.png';
-import oliverImg from '@/assets/characters/oliver.png';
 import jordanImg from '@/assets/characters/jordan.png';
 
-// Andres uses a unified spritesheet - all states point to the same image
+// Andres and Oliver use unified spritesheets - all states point to the same image
 // The animation hook handles row selection based on state
 export const CHARACTER_SPRITES: Record<string, CharacterSprites> = {
   andres: {
@@ -23,27 +24,17 @@ export const CHARACTER_SPRITES: Record<string, CharacterSprites> = {
     victory: andresSpritesheet,
     special: andresSpritesheet,
   },
-  camilo: {
-    idle: camiloImg,
-    walk: camiloImg,
-    jump: camiloImg,
-    block: camiloImg,
-    lightAttack: camiloImg,
-    heavyAttack: camiloImg,
-    hit: camiloImg,
-    defeat: camiloImg,
-    victory: camiloImg,
-  },
   oliver: {
-    idle: oliverImg,
-    walk: oliverImg,
-    jump: oliverImg,
-    block: oliverImg,
-    lightAttack: oliverImg,
-    heavyAttack: oliverImg,
-    hit: oliverImg,
-    defeat: oliverImg,
-    victory: oliverImg,
+    idle: oliverSpritesheet,
+    walk: oliverSpritesheet,
+    jump: oliverSpritesheet,
+    block: oliverSpritesheet,
+    lightAttack: oliverSpritesheet,
+    heavyAttack: oliverSpritesheet,
+    hit: oliverSpritesheet,
+    defeat: oliverSpritesheet,
+    victory: oliverSpritesheet,
+    special: oliverSpritesheet,
   },
   jordan: {
     idle: jordanImg,
