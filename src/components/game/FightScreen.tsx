@@ -216,7 +216,7 @@ export function FightScreen({
           const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER1_CONTROLS.up);
           
           // Start jump only on fresh key press when grounded
-          if (jumpKeyPressed && !jumpKeyWasPressed && prev.y === 0 && !isBlocking) {
+          if (jumpKeyPressed && !jumpKeyWasPressed && prev.y <= 0 && !prev.isJumping && !isBlocking) {
             newVelocityY = GAME_CONFIG.JUMP_FORCE;
             isJumping = true;
           }
@@ -224,10 +224,10 @@ export function FightScreen({
           // Apply gravity and vertical movement
           let newY = prev.y;
           
-          // Apply gravity when in air
-          if (prev.y > 0 || newVelocityY > 0) {
-            newY = prev.y + newVelocityY;
+          // Apply physics when jumping or in air
+          if (isJumping || prev.isJumping || newVelocityY !== 0 || prev.y > 0) {
             newVelocityY -= GAME_CONFIG.GRAVITY;
+            newY = prev.y + newVelocityY;
             isJumping = true;
           }
           
@@ -334,15 +334,15 @@ export function FightScreen({
             }
 
             // Random jump - only when grounded
-            if (Math.random() < 0.01 && prev.y === 0) {
+            if (Math.random() < 0.01 && prev.y <= 0 && !prev.isJumping) {
               newVelocityY = GAME_CONFIG.JUMP_FORCE;
               isJumping = true;
             }
 
-            // Gravity - apply when in air
-            if (prev.y > 0 || newVelocityY > 0) {
-              newY = prev.y + newVelocityY;
+            // Apply physics when jumping or in air
+            if (isJumping || prev.isJumping || newVelocityY !== 0 || prev.y > 0) {
               newVelocityY -= GAME_CONFIG.GRAVITY;
+              newY = prev.y + newVelocityY;
               isJumping = true;
             }
             
@@ -423,7 +423,7 @@ export function FightScreen({
             const jumpKeyPressed = keysPressed.current.has(PLAYER2_CONTROLS.up);
             const jumpKeyWasPressed = prevKeysPressed.current.has(PLAYER2_CONTROLS.up);
             
-            if (jumpKeyPressed && !jumpKeyWasPressed && prev.y === 0 && !isBlocking) {
+            if (jumpKeyPressed && !jumpKeyWasPressed && prev.y <= 0 && !prev.isJumping && !isBlocking) {
               newVelocityY = GAME_CONFIG.JUMP_FORCE;
               isJumping = true;
             }
@@ -431,10 +431,10 @@ export function FightScreen({
             // Apply gravity and vertical movement
             let newY = prev.y;
             
-            // Apply gravity when in air
-            if (prev.y > 0 || newVelocityY > 0) {
-              newY = prev.y + newVelocityY;
+            // Apply physics when jumping or in air
+            if (isJumping || prev.isJumping || newVelocityY !== 0 || prev.y > 0) {
               newVelocityY -= GAME_CONFIG.GRAVITY;
+              newY = prev.y + newVelocityY;
               isJumping = true;
             }
             

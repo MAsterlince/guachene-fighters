@@ -37,8 +37,8 @@ export const SPRITE_CONFIGS: Record<string, Record<string, RowBasedSpriteConfig>
     heavyAttack: { row: 4, cols: 5, frameDuration: 100, loop: false },
     block: { row: 5, cols: 1, frameDuration: 300, loop: true },
     hit: { row: 6, cols: 2, frameDuration: 500, loop: false }, // 2 frames x 500ms = 1 second
-    victory: { row: 7, cols: 5, frameDuration: 400, loop: true }, // Slow victory, loops
-    defeat: { row: 8, cols: 3, frameDuration: 400, loop: false }, // Slow defeat, freezes on last frame
+    victory: { row: 7, cols: 5, frameDuration: 600, loop: true }, // Slower victory, loops
+    defeat: { row: 8, cols: 3, frameDuration: 500, loop: false }, // Slow defeat, freezes on last frame
   },
   oliver: {
     idle: { row: 0, cols: 1, frameDuration: 600, loop: true },
@@ -48,8 +48,8 @@ export const SPRITE_CONFIGS: Record<string, Record<string, RowBasedSpriteConfig>
     heavyAttack: { row: 4, cols: 5, frameDuration: 100, loop: false },
     block: { row: 5, cols: 1, frameDuration: 300, loop: true },
     hit: { row: 6, cols: 2, frameDuration: 500, loop: false }, // 2 frames x 500ms = 1 second
-    victory: { row: 7, cols: 5, frameDuration: 400, loop: true }, // Slow victory, loops
-    defeat: { row: 8, cols: 3, frameDuration: 400, loop: false }, // 3 frames, slow, freezes on last
+    victory: { row: 7, cols: 5, frameDuration: 600, loop: true }, // Slower victory, loops
+    defeat: { row: 8, cols: 3, frameDuration: 500, loop: false }, // 3 frames, slow, freezes on last
   },
   // Other characters use single images for now
   camilo: {},

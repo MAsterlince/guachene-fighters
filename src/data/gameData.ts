@@ -65,7 +65,7 @@ export const GAME_CONFIG = {
   MOVE_SPEED: 8, // Fast and fluid movement
   LIGHT_DAMAGE: 8,
   HEAVY_DAMAGE: 15,
-  LIGHT_ATTACK_RANGE: 120, // Short range for light attacks
+  LIGHT_ATTACK_RANGE: 140, // Medium range for light attacks
   HEAVY_ATTACK_RANGE: 180, // Extended range for heavy attacks
   BLOCK_REDUCTION: 0.3,
   MAX_HEALTH: 100,
