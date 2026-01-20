@@ -49,6 +49,7 @@ export function FightScreen({
   const [fighter1, setFighter1] = useState<FighterType>(() => createFighter(player1Character, false));
   const [fighter2, setFighter2] = useState<FighterType>(() => createFighter(player2Character, true));
   const [winner, setWinner] = useState<1 | 2 | null>(null);
+  const [showVictoryScreen, setShowVictoryScreen] = useState(false);
   const [roundTime, setRoundTime] = useState(GAME_CONFIG.ROUND_TIME);
   const [damageNumbers, setDamageNumbers] = useState<Array<{ id: number; x: number; y: number; damage: number }>>([]);
   
@@ -359,20 +360,24 @@ export function FightScreen({
     };
   }, [isPaused, winner, mode, handleAttack, fighter1.x]);
 
-  // Check for winner
+  // Check for winner and add delay before showing victory screen
   useEffect(() => {
     if (fighter1.health <= 0 && !winner) {
       setWinner(2);
       setFighter1(prev => ({ ...prev, state: 'defeated' }));
       setFighter2(prev => ({ ...prev, state: 'victory' }));
+      // Delay showing victory screen by 3 seconds
+      setTimeout(() => setShowVictoryScreen(true), 3000);
     } else if (fighter2.health <= 0 && !winner) {
       setWinner(1);
       setFighter2(prev => ({ ...prev, state: 'defeated' }));
       setFighter1(prev => ({ ...prev, state: 'victory' }));
+      // Delay showing victory screen by 3 seconds
+      setTimeout(() => setShowVictoryScreen(true), 3000);
     }
   }, [fighter1.health, fighter2.health, winner]);
 
-  // Timer
+  // Timer - also add delay for time-based winner
   useEffect(() => {
     if (isPaused || winner) return;
     
@@ -381,9 +386,14 @@ export function FightScreen({
         if (prev <= 0) {
           if (fighter1.health > fighter2.health) {
             setWinner(1);
+            setFighter2(prev => ({ ...prev, state: 'defeated' }));
+            setFighter1(prev => ({ ...prev, state: 'victory' }));
           } else if (fighter2.health > fighter1.health) {
             setWinner(2);
+            setFighter1(prev => ({ ...prev, state: 'defeated' }));
+            setFighter2(prev => ({ ...prev, state: 'victory' }));
           }
+          setTimeout(() => setShowVictoryScreen(true), 3000);
           return 0;
         }
         return prev - 1;
@@ -444,6 +454,7 @@ export function FightScreen({
     setFighter1(createFighter(player1Character, false));
     setFighter2(createFighter(player2Character, true));
     setWinner(null);
+    setShowVictoryScreen(false);
     setRoundTime(GAME_CONFIG.ROUND_TIME);
     attackCooldown.current = { p1: 0, p2: 0 };
   };
@@ -566,8 +577,8 @@ export function FightScreen({
         />
       )}
 
-      {/* Victory screen */}
-      {winner && (
+      {/* Victory screen - only shown after delay */}
+      {showVictoryScreen && winner && (
         <VictoryScreen
           winner={winner === 1 ? player1Character : player2Character}
           winnerPlayer={winner}

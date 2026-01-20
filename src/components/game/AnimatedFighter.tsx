@@ -47,7 +47,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
 
   const currentSprite = getCurrentSprite();
   const config = SPRITE_CONFIGS[characterId]?.[spriteKey];
-  const frameStyle = getFrameStyle(1, 1); // We'll use percentages
+  const frameStyle = getFrameStyle();
 
   const getTransform = () => {
     const scaleX = fighter.facingRight ? 1 : -1;
@@ -87,7 +87,7 @@ export function AnimatedFighter({ fighter, isPlayer2 = false }: AnimatedFighterP
           backgroundImage: `url(${currentSprite})`,
           backgroundRepeat: 'no-repeat',
           backgroundSize: hasAnimation && config 
-            ? `${config.cols * 100}% ${config.rows * 100}%`
+            ? `${config.maxCols * 100}% ${config.totalRows * 100}%`
             : 'contain',
           backgroundPosition: hasAnimation && config
             ? frameStyle.backgroundPosition

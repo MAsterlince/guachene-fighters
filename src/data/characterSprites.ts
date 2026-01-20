@@ -1,33 +1,27 @@
 import { CharacterSprites } from '@/types/sprites';
 
-// Andres sprites
-import andresIdle from '@/assets/characters/andres.png';
-import andresWalk from '@/assets/characters/andres/walk.jpg';
-import andresJump from '@/assets/characters/andres/jump.jpg';
-import andresBlock from '@/assets/characters/andres/block.jpg';
-import andresPunch from '@/assets/characters/andres/punch.png';
-import andresSpecial from '@/assets/characters/andres/special.jpg';
-import andresHit from '@/assets/characters/andres/hit.jpg';
-import andresDefeat from '@/assets/characters/andres/defeat.jpg';
-import andresVictory from '@/assets/characters/andres/victory.jpg';
+// Andres unified spritesheet
+import andresSpritesheet from '@/assets/characters/andres/spritesheet.png';
 
 // Import other character base images for now (placeholders until sprites provided)
 import camiloImg from '@/assets/characters/camilo.png';
 import oliverImg from '@/assets/characters/oliver.png';
 import jordanImg from '@/assets/characters/jordan.png';
 
+// Andres uses a unified spritesheet - all states point to the same image
+// The animation hook handles row selection based on state
 export const CHARACTER_SPRITES: Record<string, CharacterSprites> = {
   andres: {
-    idle: andresIdle,
-    walk: andresWalk,
-    jump: andresJump,
-    block: andresBlock,
-    lightAttack: andresPunch,
-    heavyAttack: andresSpecial,
-    hit: andresHit,
-    defeat: andresDefeat,
-    victory: andresVictory,
-    special: andresSpecial,
+    idle: andresSpritesheet,
+    walk: andresSpritesheet,
+    jump: andresSpritesheet,
+    block: andresSpritesheet,
+    lightAttack: andresSpritesheet,
+    heavyAttack: andresSpritesheet,
+    hit: andresSpritesheet,
+    defeat: andresSpritesheet,
+    victory: andresSpritesheet,
+    special: andresSpritesheet,
   },
   camilo: {
     idle: camiloImg,
@@ -64,16 +58,14 @@ export const CHARACTER_SPRITES: Record<string, CharacterSprites> = {
   },
 };
 
-// Sprite sheet dimensions for frame extraction
-export const SPRITE_DIMENSIONS: Record<string, Record<string, { cols: number; rows: number }>> = {
-  andres: {
-    walk: { cols: 4, rows: 1 },
-    jump: { cols: 3, rows: 1 },
-    block: { cols: 1, rows: 1 },
-    lightAttack: { cols: 1, rows: 1 },
-    heavyAttack: { cols: 3, rows: 2 }, // 5 frames total
-    hit: { cols: 1, rows: 2 },
-    defeat: { cols: 2, rows: 4 }, // 7 frames
-    victory: { cols: 4, rows: 1 },
-  },
-};
+// Spritesheet config: row-based layout
+// Andres spritesheet layout (top to bottom):
+// Row 0: idle (1 frame)
+// Row 1: walk (4 frames)
+// Row 2: jump (3 frames)
+// Row 3: lightAttack (1 frame)
+// Row 4: heavyAttack (5 frames)
+// Row 5: block (1 frame)
+// Row 6: hit (2 frames)
+// Row 7: victory (5 frames)
+// Row 8: defeat (3 frames)
