@@ -220,12 +220,13 @@ export function FightScreen({
             isJumping = true;
           }
 
-          // Gravity and vertical movement
+          // Apply gravity and vertical movement
           let newY = prev.y;
-          if (isJumping) {
-            newY += newVelocityY;
-            newVelocityY -= GAME_CONFIG.GRAVITY;
+          if (isJumping || newY > 0) {
+            newVelocityY -= GAME_CONFIG.GRAVITY; // Apply gravity first
+            newY += newVelocityY; // Then update position
             
+            // Landing on ground
             if (newY <= 0) {
               newY = 0;
               newVelocityY = 0;
@@ -331,9 +332,9 @@ export function FightScreen({
             }
 
             // Gravity
-            if (isJumping) {
-              newY += newVelocityY;
+            if (isJumping || newY > 0) {
               newVelocityY -= GAME_CONFIG.GRAVITY;
+              newY += newVelocityY;
               if (newY <= 0) {
                 newY = 0;
                 newVelocityY = 0;
@@ -412,10 +413,11 @@ export function FightScreen({
               isJumping = true;
             }
 
+            // Apply gravity and vertical movement
             let newY = prev.y;
-            if (isJumping) {
-              newY += newVelocityY;
+            if (isJumping || newY > 0) {
               newVelocityY -= GAME_CONFIG.GRAVITY;
+              newY += newVelocityY;
               if (newY <= 0) {
                 newY = 0;
                 newVelocityY = 0;
