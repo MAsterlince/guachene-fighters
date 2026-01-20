@@ -1,25 +1,39 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
-interface SpriteConfig {
-  cols: number;
-  rows: number;
-  totalFrames?: number; // If not all cells are used
+interface RowBasedSpriteConfig {
+  row: number;          // Which row in the spritesheet
+  cols: number;         // Number of frames in this row
   frameDuration: number;
   loop: boolean;
+  maxCols: number;      // Total columns in the spritesheet grid
+  totalRows: number;    // Total rows in the spritesheet
 }
 
-// Sprite sheet configurations with actual frame counts
-export const SPRITE_CONFIGS: Record<string, Record<string, SpriteConfig>> = {
+// Andres unified spritesheet configuration
+// Based on user's description:
+// Row 0: idle (1 frame)
+// Row 1: walk (4 frames)
+// Row 2: jump (3 frames)
+// Row 3: lightAttack (1 frame)
+// Row 4: heavyAttack (5 frames)
+// Row 5: block (1 frame)
+// Row 6: hit (2 frames)
+// Row 7: victory (5 frames)
+// Row 8: defeat (3 frames)
+const TOTAL_ROWS = 9;
+const MAX_COLS = 5; // Maximum number of frames in any row
+
+export const SPRITE_CONFIGS: Record<string, Record<string, RowBasedSpriteConfig>> = {
   andres: {
-    idle: { cols: 1, rows: 1, totalFrames: 1, frameDuration: 500, loop: true },
-    walk: { cols: 4, rows: 1, totalFrames: 4, frameDuration: 120, loop: true },
-    jump: { cols: 3, rows: 1, totalFrames: 3, frameDuration: 100, loop: false },
-    block: { cols: 1, rows: 1, totalFrames: 1, frameDuration: 200, loop: true },
-    lightAttack: { cols: 1, rows: 1, totalFrames: 1, frameDuration: 100, loop: false },
-    heavyAttack: { cols: 3, rows: 2, totalFrames: 5, frameDuration: 80, loop: false },
-    hit: { cols: 1, rows: 2, totalFrames: 2, frameDuration: 100, loop: false },
-    defeat: { cols: 2, rows: 4, totalFrames: 7, frameDuration: 150, loop: false },
-    victory: { cols: 4, rows: 1, totalFrames: 4, frameDuration: 180, loop: true },
+    idle: { row: 0, cols: 1, frameDuration: 500, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    walk: { row: 1, cols: 4, frameDuration: 120, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    jump: { row: 2, cols: 3, frameDuration: 100, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    lightAttack: { row: 3, cols: 1, frameDuration: 100, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    heavyAttack: { row: 4, cols: 5, frameDuration: 80, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    block: { row: 5, cols: 1, frameDuration: 200, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    hit: { row: 6, cols: 2, frameDuration: 100, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    victory: { row: 7, cols: 5, frameDuration: 180, loop: true, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
+    defeat: { row: 8, cols: 3, frameDuration: 200, loop: false, maxCols: MAX_COLS, totalRows: TOTAL_ROWS },
   },
   // Other characters use single images for now
   camilo: {},
@@ -65,8 +79,8 @@ export function useSpriteAnimation({
   }, [state, attackType]);
 
   const config = SPRITE_CONFIGS[characterId]?.[spriteKey];
-  const hasAnimation = !!config && config.totalFrames && config.totalFrames > 1;
-  const totalFrames = config?.totalFrames || 1;
+  const hasAnimation = !!config && config.cols > 1;
+  const totalFrames = config?.cols || 1;
   const frameDuration = config?.frameDuration || 150;
   const shouldLoop = config?.loop ?? true;
 
@@ -102,8 +116,8 @@ export function useSpriteAnimation({
     };
   }, [isActive, hasAnimation, totalFrames, frameDuration, shouldLoop, state, attackType]);
 
-  // Calculate the exact pixel position for background-position
-  const getFrameStyle = useCallback((spriteWidth: number, spriteHeight: number) => {
+  // Calculate background position for row-based spritesheet
+  const getFrameStyle = useCallback(() => {
     if (!config) {
       return {
         backgroundSize: 'contain',
@@ -111,20 +125,16 @@ export function useSpriteAnimation({
       };
     }
 
-    const { cols, rows } = config;
-    const col = currentFrame % cols;
-    const row = Math.floor(currentFrame / cols);
+    const { row, maxCols, totalRows } = config;
     
-    // Frame dimensions
-    const frameWidth = spriteWidth / cols;
-    const frameHeight = spriteHeight / rows;
-    
-    // Background position as percentages
-    const xPercent = cols > 1 ? (col / (cols - 1)) * 100 : 50;
-    const yPercent = rows > 1 ? (row / (rows - 1)) * 100 : 0;
+    // Calculate percentage positions
+    // X: move horizontally through frames
+    const xPercent = maxCols > 1 ? (currentFrame / (maxCols - 1)) * 100 : 0;
+    // Y: fixed row position
+    const yPercent = totalRows > 1 ? (row / (totalRows - 1)) * 100 : 0;
 
     return {
-      backgroundSize: `${cols * 100}% ${rows * 100}%`,
+      backgroundSize: `${maxCols * 100}% ${totalRows * 100}%`,
       backgroundPosition: `${xPercent}% ${yPercent}%`,
     };
   }, [currentFrame, config]);
