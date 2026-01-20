@@ -61,7 +61,7 @@ export const GAME_CONFIG = {
   FIGHTER_WIDTH: 120,
   FIGHTER_HEIGHT: 200,
   GRAVITY: 0.8,
-  JUMP_FORCE: 16,
+  JUMP_FORCE: 20,
   MOVE_SPEED: 8, // Fast and fluid movement
   LIGHT_DAMAGE: 8,
   HEAVY_DAMAGE: 15,

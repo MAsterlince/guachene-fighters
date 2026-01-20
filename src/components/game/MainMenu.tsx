@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameMode } from '@/types/game';
+import { useGameAudio } from '@/hooks/useGameAudio';
+import { Volume2, VolumeX } from 'lucide-react';
 import menuBackground from '@/assets/menu-background.png';
 
 interface MainMenuProps {
@@ -8,6 +10,12 @@ interface MainMenuProps {
 
 export function MainMenu({ onSelectMode }: MainMenuProps) {
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+  const { isMuted, toggleMute, play } = useGameAudio();
+
+  // Auto-play music when menu loads
+  useEffect(() => {
+    play();
+  }, [play]);
 
   return (
     <div 
@@ -26,6 +34,24 @@ export function MainMenu({ onSelectMode }: MainMenuProps) {
           background: 'linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(0, 0, 0, 0.7) 100%)',
         }}
       />
+
+      {/* Music toggle button */}
+      <button
+        onClick={toggleMute}
+        className="absolute top-4 right-4 z-20 p-3 rounded-lg transition-all duration-200 hover:scale-110"
+        style={{
+          background: 'rgba(0, 0, 0, 0.7)',
+          border: '2px solid rgba(255, 100, 50, 0.5)',
+          boxShadow: '0 0 15px rgba(255, 100, 50, 0.3)',
+        }}
+        title={isMuted ? 'Activar música' : 'Silenciar música'}
+      >
+        {isMuted ? (
+          <VolumeX className="w-6 h-6 text-red-400" />
+        ) : (
+          <Volume2 className="w-6 h-6 text-orange-400" />
+        )}
+      </button>
 
       {/* Content at bottom */}
       <div className="relative z-10 flex flex-col items-center gap-6 pb-12">
