@@ -1,8 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@font-face {
+  font-family: '8bitOperator';
+  src: url('./assets/fonts/8bitOperatorPlus8-Bold.ttf') format('truetype');
+  font-weight: bold;
+}
+@font-face {
+  font-family: '8bitOperator';
+  src: url('./assets/fonts/8bitOperatorPlus8-Regular.ttf') format('truetype');
+  font-weight: normal;
+}
 
 @layer base {
   :root {
