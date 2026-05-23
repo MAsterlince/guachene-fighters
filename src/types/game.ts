@@ -7,6 +7,7 @@ export interface Character {
   name: string;
   image: string;
   color: string;
+  icon: string;
 }
 
 export interface GameMap {
